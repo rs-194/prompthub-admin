@@ -85,3 +85,21 @@
 验证方式：
 - npm run build
 - 启动项目后访问 `/dashboard`，检查统计卡片和最近操作记录表格是否正常显示
+
+### 2026-05-08：提示词管理列表展示与筛选
+
+内容：
+- 新增提示词管理类型 `frontend/src/types/prompt.ts`
+- 新增提示词管理数据服务 `frontend/src/services/prompt.ts`，当前为 mock 数据，后端待接入
+- 完善 `frontend/src/views/prompts/PromptListView.vue`，支持提示词列表展示、搜索和分类筛选
+
+影响范围：
+- frontend/src/views/prompts
+- frontend/src/services
+- frontend/src/types
+- docs/roadmap.md
+- README.md
+
+验证方式：
+- npm run build
+- 启动项目后访问 `/prompts`，检查提示词列表、搜索、分类筛选和重置按钮是否正常可用
