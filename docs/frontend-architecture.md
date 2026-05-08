@@ -77,3 +77,10 @@ src/
 - 模块接口：`src/api/<module>.ts`（计划）或 `src/services/<module>.ts`
 
 说明：当前项目处于前端骨架阶段，复杂架构与分层将在业务实现过程中逐步落地。
+
+## 13.前端技术债
+- src/views/dashboard/DashboardView.vue 目前没有 loading 状态，不过 mock 数据很快返回，所以目前不加也行。以后接真实接口时再加类似：
+
+const loading = ref(false)
+
+表格和卡片可以显示加载状态。
