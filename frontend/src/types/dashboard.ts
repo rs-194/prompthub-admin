@@ -1,3 +1,4 @@
+// dashboard.ts (TypeScript types for dashboard data structures)
 export interface DashboardStatItem {
   label: string;
   value: number;

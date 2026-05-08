@@ -1,3 +1,4 @@
+// dashboard.ts(service for dashboard data fetching and processing)
 import type { DashboardOverview } from '@/types/dashboard';
 
 // 当前为 mock 数据，后端待接入；后续可替换为真实 Dashboard 概览接口。
@@ -63,7 +64,7 @@ const dashboardOverview: DashboardOverview = {
     },
   ],
 };
-
+// 当前使用本地 mock 数据模拟接口返回；后续接入后端后，只替换 getDashboardOverview 内部实现。
 export function getDashboardOverview(): Promise<DashboardOverview> {
   return Promise.resolve(dashboardOverview);
 }

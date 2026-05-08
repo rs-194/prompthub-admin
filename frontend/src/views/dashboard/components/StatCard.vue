@@ -1,3 +1,4 @@
+//StatCard.vue
 <template>
   <el-card class="stat-card" shadow="hover">
     <div class="stat-card__label">{{ item.label }}</div>

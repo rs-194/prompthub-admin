@@ -1,3 +1,4 @@
+// DashboardView.vue
 <template>
   <div class="page-card">
     <div class="dashboard-header">
