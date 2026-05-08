@@ -67,3 +67,21 @@
 验证方式：
 - npm run build 通过
 - npm run dev 页面显示正常
+
+### 2026-05-08：Dashboard 首页 mock 数据看板
+
+内容：
+- 新增 Dashboard 相关类型 `types/dashboard.ts`
+- 新增 Dashboard 数据服务 `services/dashboard.ts`，当前为 mock 数据，后端待接入
+- 新增 Dashboard 统计卡片组件 `StatCard.vue`
+- 完善 Dashboard 首页，展示统计卡片和最近操作记录表格
+
+影响范围：
+- frontend/src/views/dashboard
+- frontend/src/services
+- frontend/src/types
+- docs/roadmap.md
+
+验证方式：
+- npm run build
+- 启动项目后访问 `/dashboard`，检查统计卡片和最近操作记录表格是否正常显示
