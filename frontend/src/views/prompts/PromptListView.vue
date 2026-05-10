@@ -6,66 +6,57 @@
     </div>
 
     <div class="prompt-filters">
-      <ElInput
+      <el-input
         v-model="searchKeyword"
         class="prompt-filters__search"
         clearable
         placeholder="搜索标题、内容或使用场景"
       />
-      <ElSelect
+      <el-select
         v-model="selectedCategory"
         class="prompt-filters__category"
         clearable
         placeholder="选择分类"
       >
-        <ElOption
+        <el-option
           v-for="category in categories"
           :key="category.value"
           :label="category.label"
           :value="category.value"
         />
-      </ElSelect>
-      <ElButton @click="handleReset">重置</ElButton>
+      </el-select>
+      <el-button @click="handleReset">重置</el-button>
     </div>
 
-    <ElTable :data="filteredPrompts" stripe>
-      <ElTableColumn prop="title" label="标题" min-width="180" />
-      <ElTableColumn label="分类" min-width="120">
-        <template #default="{ row }: { row: PromptItem }">
+    <el-table :data="filteredPrompts" stripe>
+      <el-table-column prop="title" label="标题" min-width="180" />
+      <el-table-column label="分类" min-width="120">
+        <template #default="{ row }">
           {{ getCategoryLabel(row.category) }}
         </template>
-      </ElTableColumn>
-      <ElTableColumn prop="usageScene" label="使用场景" min-width="220" />
-      <ElTableColumn label="标签" min-width="180">
-        <template #default="{ row }: { row: PromptItem }">
+      </el-table-column>
+      <el-table-column prop="usageScene" label="使用场景" min-width="220" />
+      <el-table-column label="标签" min-width="180">
+        <template #default="{ row }">
           <div class="prompt-tags">
-            <ElTag
+            <el-tag
               v-for="tag in row.tags"
               :key="tag"
               effect="light"
               size="small"
             >
               {{ tag }}
-            </ElTag>
+            </el-tag>
           </div>
         </template>
-      </ElTableColumn>
-      <ElTableColumn prop="updatedAt" label="更新时间" min-width="160" />
-    </ElTable>
+      </el-table-column>
+      <el-table-column prop="updatedAt" label="更新时间" min-width="160" />
+    </el-table>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import {
-  ElButton,
-  ElInput,
-  ElOption,
-  ElSelect,
-  ElTable,
-  ElTableColumn,
-  ElTag,
-} from 'element-plus';
 
 import { getPromptCategories, getPromptList } from '@/services/prompt';
 import type { PromptCategory, PromptItem } from '@/types/prompt';
