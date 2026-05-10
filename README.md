@@ -53,6 +53,7 @@ prompthub-admin/
 │  ├─ src/
 │  │  ├─ layout/                 # 后台布局与布局子组件
 │  │  ├─ views/                  # 页面视图（当前多为骨架页）
+│  │  ├─ components/             # 全局组件
 │  │  ├─ router/                 # 路由配置
 │  │  ├─ config/                 # 配置（如菜单）
 │  │  ├─ stores/                 # 状态管理

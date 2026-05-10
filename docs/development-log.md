@@ -103,3 +103,18 @@
 验证方式：
 - npm run build
 - 启动项目后访问 `/prompts`，检查提示词列表、搜索、分类筛选和重置按钮是否正常可用
+
+### 2026-05-08：提示词管理页面代码风格统一
+
+内容：
+- 统一 `frontend/src/views/prompts/PromptListView.vue` 中 Element Plus 组件为 kebab-case 写法
+- 移除提示词管理页面中不必要的 Element Plus 组件手动 import
+- 调整表格插槽参数写法，不在 template 插槽参数中添加 TypeScript 类型标注
+- 本次不涉及功能变化，不涉及 UI 变化
+
+影响范围：
+- frontend/src/views/prompts/PromptListView.vue
+
+验证方式：
+- npm run build
+- 启动项目后访问 `/prompts`，确认列表、搜索、分类筛选和重置仍正常可用
