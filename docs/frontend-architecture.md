@@ -89,3 +89,6 @@ const loading = ref(false)
 后面如果提示词数量这种 label 会变，最好给 stat 加一个 key 字段，比如：
 
 key: 'prompts'
+
+2.prompt提示词模块
+- prompt页面操作后期需要和dashboard的最近操作的表格绑定。

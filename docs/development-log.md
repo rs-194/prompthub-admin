@@ -118,3 +118,24 @@
 验证方式：
 - npm run build
 - 启动项目后访问 `/prompts`，确认列表、搜索、分类筛选和重置仍正常可用
+
+### 2026-05-10：提示词管理 mock CRUD
+
+内容：
+- 新增 `frontend/src/views/prompts/components/PromptFormDialog.vue`，用于提示词新增和编辑弹窗
+- 扩展 `frontend/src/types/prompt.ts`，补充 `PromptFormData` 和 `PromptDialogMode`
+- 扩展 `frontend/src/services/prompt.ts`，新增 create/update/delete mock CRUD 方法
+- 完善 `frontend/src/views/prompts/PromptListView.vue`，支持新增、编辑、删除和删除确认
+- 当前仍为前端 mock 数据，刷新页面后不保证持久化，后端待接入
+
+影响范围：
+- frontend/src/views/prompts
+- frontend/src/services/prompt.ts
+- frontend/src/types/prompt.ts
+- docs/roadmap.md
+- README.md
+- notes/interview
+
+验证方式：
+- npm run build
+- 启动项目后访问 `/prompts`，测试新增、编辑、删除，以及 CRUD 后搜索和分类筛选是否仍可用

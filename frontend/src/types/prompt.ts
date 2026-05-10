@@ -1,4 +1,3 @@
-// prompt.ts (TypeScript types for prompt management data structures)
 export interface PromptCategory {
   label: string;
   value: string;
@@ -13,3 +12,10 @@ export interface PromptItem {
   usageScene: string;
   updatedAt: string;
 }
+
+export type PromptDialogMode = 'create' | 'edit';
+
+export type PromptFormData = Pick<
+  PromptItem,
+  'title' | 'category' | 'content' | 'tags' | 'usageScene'
+>;

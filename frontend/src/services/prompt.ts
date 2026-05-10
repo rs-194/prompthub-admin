@@ -1,4 +1,4 @@
-import type { PromptCategory, PromptItem } from '@/types/prompt';
+import type { PromptCategory, PromptFormData, PromptItem } from '@/types/prompt';
 
 // 当前为 mock 数据，后端待接入。
 const promptCategories: PromptCategory[] = [
@@ -9,7 +9,7 @@ const promptCategories: PromptCategory[] = [
   { label: '学习总结', value: 'study-summary' },
 ];
 
-// 当前为 mock 数据，后端待接入。
+// 当前为 mock 数据，刷新页面后会恢复初始数组；后端待接入。
 const promptList: PromptItem[] = [
   {
     id: 1,
@@ -67,10 +67,79 @@ const promptList: PromptItem[] = [
   },
 ];
 
-export function getPromptCategories(): Promise<PromptCategory[]> {
-  return Promise.resolve(promptCategories);
+function getCurrentTimeText() {
+  const formatter = new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  return formatter.format(new Date()).replace(/\//g, '-');
 }
 
+function getNextPromptId() {
+  return Math.max(0, ...promptList.map((prompt) => prompt.id)) + 1;
+}
+
+export function getPromptCategories(): Promise<PromptCategory[]> {
+  return Promise.resolve([...promptCategories]);
+}
+//拉取prompt列表
 export function getPromptList(): Promise<PromptItem[]> {
-  return Promise.resolve(promptList);
+  return Promise.resolve(promptList.map((prompt) => ({ ...prompt, tags: [...prompt.tags] })));
+}
+//创造新的prompt（前端创建后，后期需要同步到后端）
+export function createPrompt(data: PromptFormData): Promise<PromptItem> {
+  const now = getCurrentTimeText();
+  const createdPrompt: PromptItem = {
+    ...data,
+    tags: [...data.tags],
+    id: getNextPromptId(),
+    updatedAt: now,
+  };
+
+  // mock CRUD 直接操作本地数组，模拟后端新增接口的返回结果。
+  promptList.unshift(createdPrompt);
+  return Promise.resolve({ ...createdPrompt, tags: [...createdPrompt.tags] });
+}
+// 更新prompt列表（前端更改后，后期需要同步到后端）
+export function updatePrompt(
+  id: number,
+  data: PromptFormData,
+): Promise<PromptItem | undefined> {
+  const targetIndex = promptList.findIndex((prompt) => prompt.id === id);
+
+  if (targetIndex === -1) {
+    return Promise.resolve(undefined);
+  }
+
+  const currentPrompt = promptList[targetIndex];
+  if (!currentPrompt) {
+    return Promise.resolve(undefined);
+  }
+
+  const updatedPrompt: PromptItem = {
+    ...currentPrompt,
+    ...data,
+    tags: [...data.tags],
+    updatedAt: getCurrentTimeText(),
+  };
+
+  // mock 编辑只更新内存数组中的对应项，刷新页面后不保证持久化。
+  promptList.splice(targetIndex, 1, updatedPrompt);
+  return Promise.resolve({ ...updatedPrompt, tags: [...updatedPrompt.tags] });
+}
+//删除prompt（前端删除后，后期需要同步到后端）
+export function deletePrompt(id: number): Promise<void> {
+  const targetIndex = promptList.findIndex((prompt) => prompt.id === id);
+
+  if (targetIndex !== -1) {
+    // mock 删除只移除当前内存数组中的数据，后端接入后会替换为接口请求。
+    promptList.splice(targetIndex, 1);
+  }
+
+  return Promise.resolve();
 }
