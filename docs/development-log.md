@@ -160,3 +160,46 @@
 验证方式：
 - npm run build
 - 启动项目后访问 `/models`，测试新增、编辑、删除、启用/停用，以及 CRUD 后搜索和供应商筛选是否仍可用
+
+### 2026-05-11：提示词管理与模型配置注释补充
+
+内容：
+- 为提示词管理模块和模型配置模块补充关键中文解释注释，覆盖 service mock、props / emit、watch、computed 和 CRUD 数据流
+- 本次仅增强代码可读性，不涉及功能变化
+- 本次不涉及 UI 变化
+- 本次不涉及接口变化
+
+影响范围：
+- frontend/src/views/prompts
+- frontend/src/views/models
+- frontend/src/services/prompt.ts
+- frontend/src/services/model.ts
+- frontend/src/types/prompt.ts
+- frontend/src/types/model.ts
+- notes/interview
+
+验证方式：
+- npm run build 通过
+- 人工验证路径：访问 `/prompts`，确认提示词列表、搜索、筛选、新增、编辑、删除仍正常
+- 人工验证路径：访问 `/models`，确认模型配置列表、搜索、筛选、新增、编辑、删除、启用/停用仍正常
+
+### 2026-05-12：提示词管理与模型配置函数级注释补充
+
+内容：
+- 为提示词管理模块和模型配置模块补充 JSDoc 风格函数级中文注释
+- 注释覆盖 service mock、computed 派生数据、弹窗 props / emit / watch、表单提交和 CRUD 数据流
+- 本次不涉及功能变化
+- 本次不涉及 UI 变化
+- 本次不涉及接口变化
+
+影响范围：
+- frontend/src/views/prompts
+- frontend/src/views/models
+- frontend/src/services/prompt.ts
+- frontend/src/services/model.ts
+- docs/development-log.md
+
+验证方式：
+- npm run build 通过
+- 人工验证路径：访问 `/prompts`，确认提示词列表、搜索、筛选、新增、编辑、删除仍正常
+- 人工验证路径：访问 `/models`，确认模型配置列表、搜索、筛选、新增、编辑、删除、启用/停用仍正常

@@ -75,6 +75,15 @@ import type {
   ModelConfigFormData,
 } from '@/types/model';
 
+/**
+ * 创建模型配置弹窗的默认空表单数据。
+ *
+ * 新增模式打开弹窗或编辑数据为空时使用；新增/编辑共用同一个弹窗，
+ * 所以需要一份本地可修改的默认表单，避免直接修改父组件传入的 props。
+ * 当前表单不处理真实 API Key，只维护模型配置的基础 mock 字段。
+ *
+ * @returns 默认的模型配置表单数据
+ */
 const emptyFormData = (): ModelConfigFormData => ({
   name: '',
   provider: 'openai-compatible',
@@ -99,6 +108,7 @@ const emit = defineEmits<{
   submit: [data: ModelConfigFormData];
 }>();
 
+// 子组件维护本地表单状态，避免直接修改 props 中由父组件传入的数据。
 const formData = reactive<ModelConfigFormData>(emptyFormData());
 
 // 新增/编辑共用一个弹窗，通过 mode 判断展示不同标题。
@@ -106,24 +116,46 @@ const dialogTitle = computed(() =>
   props.mode === 'create' ? '新增模型配置' : '编辑模型配置',
 );
 
+/**
+ * 监听父组件传入的弹窗状态、模式和 initialData。
+ *
+ * props 由父组件传入，子组件不能直接修改；
+ * 弹窗打开、mode 或 initialData 变化时，把父组件数据同步到本地 formData。
+ * mode 决定弹窗标题和表单回填方式：create 使用默认空表单，edit 使用当前行数据。
+ */
 watch(
+  // 弹窗打开、模式或回填数据变化时，把父组件 props 同步到本地表单。
   () => [props.visible, props.mode, props.initialData] as const,
   ([visible]) => {
     if (!visible) {
       return;
     }
 
-    // 弹窗打开时把 props 同步到本地表单，避免子组件直接修改父组件数据。
+    // 新增模式使用默认空表单；编辑模式用 initialData 回填当前行配置。
     Object.assign(formData, props.initialData ?? emptyFormData());
   },
   { immediate: true },
 );
 
+/**
+ * 关闭模型配置表单弹窗。
+ *
+ * 用户点击取消或弹窗关闭时调用，通过 update:visible emit 通知父组件
+ * 更新弹窗显隐状态，子组件不直接修改父组件状态。
+ */
 function handleClose() {
   emit('update:visible', false);
 }
 
+/**
+ * 提交模型配置表单数据。
+ *
+ * 用户点击保存时调用，子组件只负责提交当前本地表单副本，
+ * 再通过 submit emit 把结果交回父组件；真正的新增或编辑由父组件根据 mode 处理。
+ * 当前不处理真实 API Key，也不做真实模型连通性测试。
+ */
 function handleSubmit() {
+  // 弹窗只 emit 表单数据，真正的 create/update 由父页面根据 mode 处理。
   emit('submit', { ...formData });
 }
 </script>
