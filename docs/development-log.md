@@ -139,3 +139,24 @@
 验证方式：
 - npm run build
 - 启动项目后访问 `/prompts`，测试新增、编辑、删除，以及 CRUD 后搜索和分类筛选是否仍可用
+
+### 2026-05-11：模型配置 mock 管理
+
+内容：
+- 新增 `frontend/src/types/model.ts`，定义模型供应商、模型配置项、表单数据和弹窗模式类型
+- 新增 `frontend/src/services/model.ts`，封装模型配置 mock 列表、新增、编辑、删除和启用/停用方法
+- 新增 `frontend/src/views/models/components/ModelConfigDialog.vue`，用于模型配置新增和编辑弹窗
+- 完善 `frontend/src/views/models/ModelConfigView.vue`，支持模型配置列表、搜索、供应商筛选、新增/编辑/删除和启用/停用
+- 当前为前端 mock 数据，刷新页面后不保证持久化，后端待接入，不真实调用模型 API，不保存 API Key
+
+影响范围：
+- frontend/src/views/models
+- frontend/src/services/model.ts
+- frontend/src/types/model.ts
+- docs/roadmap.md
+- README.md
+- notes/interview
+
+验证方式：
+- npm run build
+- 启动项目后访问 `/models`，测试新增、编辑、删除、启用/停用，以及 CRUD 后搜索和供应商筛选是否仍可用
