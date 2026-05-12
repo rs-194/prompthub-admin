@@ -203,3 +203,25 @@
 - npm run build 通过
 - 人工验证路径：访问 `/prompts`，确认提示词列表、搜索、筛选、新增、编辑、删除仍正常
 - 人工验证路径：访问 `/models`，确认模型配置列表、搜索、筛选、新增、编辑、删除、启用/停用仍正常
+
+### 2026-05-12：对话测试 / Prompt 调试台 v1 mock
+
+内容：
+- 新增 `frontend/src/types/chatTest.ts`，定义调试台提示词选项、模型选项、表单数据、测试结果和测试记录类型
+- 新增 `frontend/src/services/chatTest.ts`，复用已有提示词与模型配置 mock service，封装选项加载、mock 测试、测试记录保存与查询
+- 完善 `frontend/src/views/chat-test/ChatTestView.vue`，支持提示词选择、启用模型配置选择、提示词预览、测试输入、运行测试、清空与结果展示
+- 新增 `TestResultPanel.vue` 和 `TestRecordTable.vue` 两个局部组件，分别承载结果展示与最近记录表格
+- 新增 chat-test 模块设计文档与 interview notes，明确当前仍为 mock 阶段，不接后端、不真实调用模型 API、不处理真实 API Key
+
+影响范围：
+- frontend/src/views/chat-test
+- frontend/src/services/chatTest.ts
+- frontend/src/types/chatTest.ts
+- docs/modules
+- docs/roadmap.md
+- README.md
+- notes/interview
+
+验证方式：
+- `cd frontend && npm run build`
+- 人工验证路径：访问 `/chat-test`，确认提示词和模型选项加载、模型只显示 enabled 配置、提示词预览、运行测试 loading、mock 输出、记录新增与清空按钮均按预期工作
