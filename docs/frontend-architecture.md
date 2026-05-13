@@ -92,3 +92,10 @@ key: 'prompts'
 
 2.prompt提示词模块
 - prompt页面操作后期需要和dashboard的最近操作的表格绑定。
+
+3.knowledge知识库模块
+- `frontend/src/views/knowledge/KnowledgeListView.vue` 承载知识库管理 v1 mock 页面。
+- `frontend/src/views/knowledge/components/` 放置知识库页面局部组件，例如表单弹窗与摘要预览抽屉。
+- `frontend/src/services/knowledge.ts` 封装知识库 mock service，后续接后端时优先替换 service 内部实现。
+- `frontend/src/types/knowledge.ts` 定义知识库文档元数据、来源类型、启用状态筛选与 mock 向量化状态类型。
+- 当前知识库模块不真实上传文件、不真实切片、不调用 embedding、不接向量数据库、不做真实 RAG。

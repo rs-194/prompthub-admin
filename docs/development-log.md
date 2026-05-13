@@ -225,3 +225,27 @@
 验证方式：
 - `cd frontend && npm run build`
 - 人工验证路径：访问 `/chat-test`，确认提示词和模型选项加载、模型只显示 enabled 配置、提示词预览、运行测试 loading、mock 输出、记录新增与清空按钮均按预期工作
+
+### 2026-05-13：知识库管理 v1 mock
+
+内容：
+- 新增 `frontend/src/types/knowledge.ts`，定义知识库分类、启用状态筛选、来源类型、mock 向量化状态、文档记录、表单数据和弹窗模式类型
+- 新增 `frontend/src/services/knowledge.ts`，使用前端 mock 数组封装知识库分类、文档列表、创建、编辑、删除、启用 / 停用方法
+- 完善 `frontend/src/views/knowledge/KnowledgeListView.vue`，支持文档列表、搜索、分类筛选、状态筛选、新增/编辑/删除、启用/停用、摘要与 mock 切片信息查看
+- 新增 `KnowledgeFormDialog.vue` 和 `KnowledgePreviewDrawer.vue`，分别承载新增/编辑表单与摘要预览抽屉
+- 新增知识库模块设计文档与 interview notes，明确当前仍为 mock 阶段，不接后端、不真实上传文件、不真实切片、不调用 embedding、不接向量数据库、不做真实 RAG
+
+影响范围：
+- frontend/src/views/knowledge
+- frontend/src/services/knowledge.ts
+- frontend/src/types/knowledge.ts
+- docs/modules
+- docs/development-log.md
+- docs/roadmap.md
+- docs/frontend-architecture.md
+- README.md
+- notes/interview
+
+验证方式：
+- `cd frontend && npm run build`
+- 人工验证路径：访问 `/knowledge`，确认文档列表、搜索、分类筛选、状态筛选、重置、新增、编辑、删除确认、启用/停用、摘要与 mock 切片信息查看均按预期工作
