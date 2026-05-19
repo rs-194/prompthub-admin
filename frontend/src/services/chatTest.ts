@@ -1,7 +1,9 @@
+import { getKnowledgeCategories, getKnowledgeDocumentList } from './knowledge';
 import { getModelConfigList } from './model';
 import { getPromptList } from './prompt';
 import type {
   ChatTestFormData,
+  ChatTestKnowledgeOption,
   ChatTestModelOption,
   ChatTestPromptOption,
   ChatTestRecord,
@@ -43,7 +45,30 @@ function createOutputPreview(output: string) {
 }
 
 function cloneRecord(record: ChatTestRecord): ChatTestRecord {
-  return { ...record };
+  return {
+    ...record,
+    knowledgeTitles: [...record.knowledgeTitles],
+  };
+}
+
+function buildKnowledgeReferenceText(documents: ChatTestKnowledgeOption[]) {
+  if (documents.length === 0) {
+    return '';
+  }
+
+  return documents
+    .map((document, index) => {
+      const tagsText = document.tags.length > 0 ? document.tags.join('、') : '无';
+
+      return [
+        `${index + 1}. ${document.title}`,
+        `分类：${document.categoryLabel}`,
+        `来源：${document.sourceName}`,
+        `摘要：${document.summary}`,
+        `标签：${tagsText}`,
+      ].join('\n');
+    })
+    .join('\n\n');
 }
 
 /**
@@ -90,13 +115,49 @@ export async function getChatTestModelOptions(): Promise<ChatTestModelOption[]> 
 }
 
 /**
+ * 获取调试台可选知识库文档。
+ *
+ * 页面初始化时调用，当前复用知识库模块已有 getKnowledgeDocumentList()，只读取 enabled 为 true 的文档，
+ * 并转换为 Prompt 调试台可展示和组装 mock context 的选项。当前不是 RAG，不做后端请求、
+ * embedding、向量库或真实文本切片；这里只是读取知识库 mock 元数据。后续真实 RAG 接入时，
+ * 优先替换本函数的数据来源或替换 service 内部上下文组装逻辑。
+ *
+ * @returns 已启用的知识库 mock context 选项
+ */
+export async function getChatTestKnowledgeOptions(): Promise<ChatTestKnowledgeOption[]> {
+  const [documents, categories] = await Promise.all([
+    getKnowledgeDocumentList(),
+    getKnowledgeCategories(),
+  ]);
+  const categoryLabelMap = new Map(
+    categories.map((category) => [category.value, category.label]),
+  );
+
+  return documents
+    .filter((document) => document.enabled)
+    .map((document) => ({
+      id: document.id,
+      title: document.title,
+      category: document.category,
+      categoryLabel: categoryLabelMap.get(document.category) ?? '未分类',
+      sourceName: document.sourceName,
+      summary: document.summary,
+      tags: [...document.tags],
+      chunkCount: document.chunkCount,
+      vectorStatus: document.vectorStatus,
+      enabled: document.enabled,
+    }));
+}
+
+/**
  * 运行一次 mock Prompt 测试。
  *
- * 用户点击“运行测试”后由 View 调用，参数是当前选择的 promptId、modelId
- * 和用户输入。当前只根据 mock 数据生成模拟输出，不接后端、不调用真实模型 API；
- * 后续接入真实 LLM 时，优先替换本函数内部实现。
+ * 用户点击“运行测试”后由 View 调用，参数包含当前选择的 prompt、model、用户输入和手动选择的知识库文档。
+ * 当前不是 RAG，不做后端请求、不调用真实模型 API、不做 embedding、不接向量数据库，也不做真实文本切片；
+ * 当前只是把用户手动选择的知识库 summary 等 mock 元数据拼成 mock context。后续真实 RAG / LLM API
+ * 接入时，优先替换本函数内部的上下文组装和模型调用逻辑。
  *
- * @param data 本次测试的提示词、模型配置和用户输入
+ * @param data 本次测试的提示词、模型配置、用户输入和已选知识库 mock context 信息
  * @returns mock 测试结果
  */
 export async function runMockPromptTest(data: ChatTestFormData): Promise<ChatTestResult> {
@@ -112,13 +173,21 @@ export async function runMockPromptTest(data: ChatTestFormData): Promise<ChatTes
   }
 
   const durationMs = 640 + Math.floor(Math.random() * 420);
+  const usedKnowledgeTitles = data.selectedKnowledgeDocs.map((document) => document.title);
+  const knowledgeReferenceText = buildKnowledgeReferenceText(data.selectedKnowledgeDocs);
   const output = [
     `【Mock 输出】已使用「${prompt.title}」和模型配置「${model.name}」生成测试结果。`,
+    usedKnowledgeTitles.length > 0
+      ? `本次参考了知识库 mock context：${usedKnowledgeTitles.join('、')}。这些内容来自手动选择的文档摘要，不是真实检索结果。`
+      : '本次未选择知识库文档，按基础 Prompt 测试流程生成 mock 输出。',
     '',
     `用户输入：${data.userInput.trim()}`,
     '',
+    ...(knowledgeReferenceText
+      ? ['知识库 mock context 摘要：', knowledgeReferenceText, '']
+      : []),
     '模拟回答：',
-    `根据当前提示词要求，我会围绕输入内容给出结构化回复。这里是前端 mock 结果，用于验证调试台流程、结果展示和测试记录闭环；当前没有调用真实模型 API。`,
+    '根据当前提示词要求，我会围绕输入内容给出结构化回复。这里是前端 mock 结果，用于验证调试台流程、结果展示和测试记录闭环；当前没有调用真实模型 API。',
     '',
     `参考提示词片段：${prompt.content.slice(0, 80)}`,
   ].join('\n');
@@ -128,6 +197,8 @@ export async function runMockPromptTest(data: ChatTestFormData): Promise<ChatTes
     output,
     usedPromptTitle: prompt.title,
     usedModelName: `${model.name} / ${model.modelName}`,
+    usedKnowledgeTitles,
+    contextPreview: data.contextPreview,
     durationMs,
     createdAt: getCurrentTimeText(),
   };
@@ -136,11 +207,11 @@ export async function runMockPromptTest(data: ChatTestFormData): Promise<ChatTes
 /**
  * 保存一条 mock 测试记录。
  *
- * 运行测试成功后由 View 调用，View 只传入保存记录需要的基础数据；
- * id、createdAt、outputPreview 和 status 由 service 统一生成，避免页面拼完整记录。
- * 当前记录只保存在前端内存中，刷新页面会恢复初始状态；后续接后端时替换为持久化接口。
+ * 运行测试成功后由 View 调用，View 只传入保存记录需要的基础数据、知识库标题和 mock contextPreview；
+ * id、createdAt、outputPreview、status 和 knowledgeCount 由 service 统一生成。当前记录只保存在前端内存中，
+ * 且知识库信息只是手动选择文档的 mock context 记录，不是真实 RAG 结果。后续接后端时替换为持久化接口。
  *
- * @param data 保存测试记录所需的基础输入数据
+ * @param data 保存测试记录所需的基础输入、输出和知识库 mock context 信息
  * @returns 保存后的完整测试记录
  */
 export function saveChatTestRecord(data: ChatTestRecordInput): Promise<ChatTestRecord> {
@@ -153,6 +224,9 @@ export function saveChatTestRecord(data: ChatTestRecordInput): Promise<ChatTestR
     durationMs: data.durationMs,
     createdAt: getCurrentTimeText(),
     status: 'success',
+    knowledgeTitles: [...data.knowledgeTitles],
+    knowledgeCount: data.knowledgeTitles.length,
+    contextPreview: data.contextPreview,
   };
 
   chatTestRecords.unshift(record);

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import KnowledgeContextPanel from './components/KnowledgeContextPanel.vue';
 import TestRecordTable from './components/TestRecordTable.vue';
 import TestResultPanel from './components/TestResultPanel.vue';
 import {
+  getChatTestKnowledgeOptions,
   getChatTestModelOptions,
   getChatTestPromptOptions,
   getChatTestRecords,
@@ -11,6 +13,7 @@ import {
 } from '@/services/chatTest';
 import type {
   ChatTestFormData,
+  ChatTestKnowledgeOption,
   ChatTestModelOption,
   ChatTestPromptOption,
   ChatTestRecord,
@@ -20,8 +23,10 @@ import type {
 
 const promptOptions = ref<ChatTestPromptOption[]>([]);
 const modelOptions = ref<ChatTestModelOption[]>([]);
+const knowledgeOptions = ref<ChatTestKnowledgeOption[]>([]);
 const selectedPromptId = ref<number | undefined>();
 const selectedModelId = ref<number | undefined>();
+const selectedKnowledgeIds = ref<number[]>([]);
 const userInput = ref('');
 const testResult = ref<ChatTestResult | null>(null);
 const testRecords = ref<ChatTestRecord[]>([]);
@@ -36,6 +41,20 @@ const selectedModel = computed(() =>
   modelOptions.value.find((model) => model.id === selectedModelId.value),
 );
 
+/**
+ * 根据知识库选项和用户选择的 id 推导已选文档。
+ *
+ * 用户修改知识库多选框时自动重新计算，返回值用于 mock context 预览和运行测试入参。
+ * 当前不是 RAG，也不做额外同步副作用；后续真实 RAG 接入时仍应优先由 service 替换上下文构建逻辑。
+ *
+ * @returns 当前用户手动选择的知识库 mock 文档
+ */
+const selectedKnowledgeDocs = computed(() =>
+  knowledgeOptions.value.filter((document) =>
+    selectedKnowledgeIds.value.includes(document.id),
+  ),
+);
+
 const canRunTest = computed(
   () =>
     Boolean(selectedPrompt.value) &&
@@ -47,8 +66,8 @@ const canRunTest = computed(
 /**
  * 加载 Prompt 调试台初始数据。
  *
- * 页面挂载时调用，负责获取提示词选项、已启用模型配置选项和最近测试记录。
- * 当前数据来自前端 mock service；后续接后端时优先替换 service 内部实现。
+ * 页面挂载时调用，负责获取提示词选项、已启用模型配置、已启用知识库文档选项和最近测试记录。
+ * 当前数据来自前端 mock service，不接后端；知识库选项只是 mock context 来源，不是真实 RAG。
  *
  * @returns 加载完成后的空结果
  */
@@ -56,14 +75,16 @@ async function loadInitialData() {
   errorMessage.value = '';
 
   try {
-    const [prompts, models, records] = await Promise.all([
+    const [prompts, models, knowledgeDocuments, records] = await Promise.all([
       getChatTestPromptOptions(),
       getChatTestModelOptions(),
+      getChatTestKnowledgeOptions(),
       getChatTestRecords(),
     ]);
 
     promptOptions.value = prompts;
     modelOptions.value = models;
+    knowledgeOptions.value = knowledgeDocuments;
     testRecords.value = records;
   } catch {
     errorMessage.value = '调试台初始化失败，请稍后重试';
@@ -73,8 +94,8 @@ async function loadInitialData() {
 /**
  * 刷新最近测试记录。
  *
- * 保存一条测试记录后调用，当前读取前端内存 mock 记录；
- * 后续接后端时由 getChatTestRecords 替换为真实查询接口。
+ * 保存一条测试记录后调用，当前读取前端内存 mock 记录；后续接后端时由 getChatTestRecords
+ * 替换为真实查询接口。
  *
  * @returns 刷新完成后的空结果
  */
@@ -83,10 +104,40 @@ async function refreshTestRecords() {
 }
 
 /**
+ * 从已选知识库文档生成简短 mock context 预览。
+ *
+ * 运行测试前调用，参数是用户手动选择的知识库文档；返回值只拼接 title、sourceName、summary 和 tags
+ * 等 mock 元数据。当前不是 RAG，不包含真实检索片段、embedding 或向量库结果；后续真实 RAG 接入时，
+ * 优先替换 service 内部上下文组装和模型调用逻辑。
+ *
+ * @param documents 用户手动选择的知识库 mock 文档
+ * @returns 用于结果展示和测试记录保存的 mock context 预览
+ */
+function buildKnowledgeContextPreview(documents: ChatTestKnowledgeOption[]) {
+  if (documents.length === 0) {
+    return '';
+  }
+
+  return documents
+    .map((document, index) => {
+      const tagsText = document.tags.length > 0 ? document.tags.join('、') : '无';
+
+      return [
+        `${index + 1}. ${document.title}`,
+        `来源：${document.sourceName}`,
+        `摘要：${document.summary}`,
+        `标签：${tagsText}`,
+      ].join('\n');
+    })
+    .join('\n\n');
+}
+
+/**
  * 构造保存测试记录所需的基础数据。
  *
- * 运行测试成功后调用，只组装 service 需要的输入数据；
- * 完整记录的 id、createdAt、outputPreview 和 status 由 saveChatTestRecord 生成。
+ * 运行测试成功后调用，参数是 mock 测试结果；返回值交给 saveChatTestRecord 生成完整记录。
+ * 本函数会保存 knowledgeTitles 和 contextPreview，但这些字段只表示手动选择的 mock context，
+ * 不表示真实 RAG 结果。
  *
  * @param result 本次 mock 测试返回的结果
  * @returns 保存测试记录所需的基础数据
@@ -98,15 +149,17 @@ function buildRecordInput(result: ChatTestResult): ChatTestRecordInput {
     userInput: userInput.value.trim(),
     output: result.output,
     durationMs: result.durationMs,
+    knowledgeTitles: [...result.usedKnowledgeTitles],
+    contextPreview: result.contextPreview,
   };
 }
 
 /**
  * 运行一次 Prompt mock 测试。
  *
- * 用户点击“运行测试”时调用，负责校验页面状态、设置 loading、
- * 调用 runMockPromptTest 获取 mock 输出，并保存一条测试记录。
- * 当前不真实调用模型 API；后续接真实 LLM 时替换 runMockPromptTest 内部实现。
+ * 用户点击“运行测试”时调用，负责校验 prompt / model / userInput，读取 selectedKnowledgeDocs，
+ * 生成 mock contextPreview，调用 runMockPromptTest，并保存一条包含知识库标题和数量的测试记录。
+ * 当前不真实调用模型 API，不做 embedding，不接向量数据库；知识库上下文只来自手动选择的 mock 元数据。
  *
  * @returns 运行完成后的空结果
  */
@@ -116,10 +169,15 @@ async function handleRunTest() {
     return;
   }
 
+  const currentKnowledgeDocs = selectedKnowledgeDocs.value;
+  const contextPreview = buildKnowledgeContextPreview(currentKnowledgeDocs);
   const formData: ChatTestFormData = {
     promptId: selectedPrompt.value.id,
     modelId: selectedModel.value.id,
     userInput: userInput.value.trim(),
+    knowledgeIds: selectedKnowledgeIds.value,
+    selectedKnowledgeDocs: currentKnowledgeDocs,
+    contextPreview,
   };
 
   loading.value = true;
@@ -140,8 +198,8 @@ async function handleRunTest() {
 /**
  * 清空测试输入和当前结果。
  *
- * 用户点击“清空”时调用，清空 userInput、testResult 和 errorMessage；
- * 最近测试记录不会被清空。后续如接后端，不需要替换该本地交互函数。
+ * 用户点击“清空”时调用，清空 userInput、testResult 和 errorMessage；不清空 selectedKnowledgeIds，
+ * 因为知识库选择是增强上下文配置，不属于本按钮的输入文本清理范围。
  *
  * @returns 清空完成后的空结果
  */
@@ -154,8 +212,7 @@ function handleClearInput() {
 /**
  * 清空当前测试结果。
  *
- * 当前预留给结果区后续交互使用，只清空 testResult 和 errorMessage，
- * 不影响用户输入和最近测试记录。
+ * 只清空 testResult 和 errorMessage，不影响用户输入、最近测试记录和 selectedKnowledgeIds。
  *
  * @returns 清空完成后的空结果
  */
@@ -175,7 +232,7 @@ onMounted(() => {
       <div>
         <h1>对话测试 / Prompt 调试台</h1>
         <p>
-          用于验证提示词模板与模型配置组合效果。当前为 v1 mock 版本，不接后端，不真实调用模型 API。
+          用于验证提示词模板、模型配置与知识库 mock context 的组合效果。当前为 v2 mock 版本，不接后端，不真实调用模型 API，不做真实 RAG。
         </p>
       </div>
       <el-tag type="warning" effect="plain">Mock 调试</el-tag>
@@ -227,6 +284,32 @@ onMounted(() => {
               </el-select>
             </el-form-item>
 
+            <el-form-item label="知识库文档">
+              <el-select
+                v-model="selectedKnowledgeIds"
+                placeholder="可选择一个或多个启用中的知识库文档"
+                filterable
+                multiple
+                collapse-tags
+                collapse-tags-tooltip
+                class="full-width"
+                :disabled="knowledgeOptions.length === 0"
+              >
+                <el-option
+                  v-for="document in knowledgeOptions"
+                  :key="document.id"
+                  :label="document.title"
+                  :value="document.id"
+                >
+                  <span>{{ document.title }}</span>
+                  <span class="option-meta">{{ document.categoryLabel }}</span>
+                </el-option>
+              </el-select>
+              <div v-if="knowledgeOptions.length === 0" class="form-tip">
+                暂无启用中的知识库文档，不影响基础 Prompt 测试。
+              </div>
+            </el-form-item>
+
             <el-form-item label="测试内容">
               <el-input
                 v-model="userInput"
@@ -254,6 +337,8 @@ onMounted(() => {
             </div>
           </el-form>
         </el-card>
+
+        <KnowledgeContextPanel :documents="selectedKnowledgeDocs" />
 
         <el-card shadow="never">
           <template #header>
@@ -332,6 +417,13 @@ onMounted(() => {
   float: right;
   color: #909399;
   font-size: 12px;
+}
+
+.form-tip {
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .actions {

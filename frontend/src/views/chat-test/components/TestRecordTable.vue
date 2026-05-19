@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ChatTestRecord } from '@/types/chatTest';
 
-// 展示最近 Prompt 测试记录，本组件只负责表格渲染，不调用 service。
+// 展示最近 Prompt 测试记录，本组件只负责表格渲染，不调用 service、不维护业务状态。
 defineProps<{
   records: ChatTestRecord[];
 }>();
@@ -19,6 +19,19 @@ defineProps<{
     <el-table :data="records" empty-text="暂无测试记录" stripe>
       <el-table-column prop="promptTitle" label="提示词" min-width="140" />
       <el-table-column prop="modelName" label="模型配置" min-width="150" />
+      <el-table-column label="知识库" width="130">
+        <template #default="{ row }">
+          <span v-if="row.knowledgeCount === 0" class="empty-knowledge">未使用</span>
+          <span
+            v-else
+            :title="row.knowledgeTitles.join('、')"
+          >
+            <el-tag size="small" type="warning" effect="plain">
+              已用 {{ row.knowledgeCount }} 篇
+            </el-tag>
+          </span>
+        </template>
+      </el-table-column>
       <el-table-column prop="userInput" label="测试输入" min-width="180" show-overflow-tooltip />
       <el-table-column prop="outputPreview" label="输出摘要" min-width="220" show-overflow-tooltip />
       <el-table-column prop="durationMs" label="耗时" width="100">
@@ -43,5 +56,10 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.empty-knowledge {
+  color: #909399;
+  font-size: 12px;
 }
 </style>

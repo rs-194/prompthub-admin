@@ -5,6 +5,7 @@
 | 模块 | 阶段 | 文档 | 状态 |
 | --- | --- | --- | --- |
 | 对话测试 / Prompt 调试台 | v1 mock | `chat-test/v1-mock-design.md` | 已实现 |
+| 对话测试 / Prompt 调试台 | v2 knowledge-context mock | `chat-test/v2-knowledge-context-mock.md` | 已实现 |
 | 知识库管理 | v1 mock | `knowledge/v1-mock-design.md` | 已实现 |
 
 后续如果进入真实后端接入、测试记录持久化、RAG 或 Agent Workflow 阶段，应继续在对应模块目录下新增版本化设计文档。

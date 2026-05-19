@@ -249,3 +249,30 @@
 验证方式：
 - `cd frontend && npm run build`
 - 人工验证路径：访问 `/knowledge`，确认文档列表、搜索、分类筛选、状态筛选、重置、新增、编辑、删除确认、启用/停用、摘要与 mock 切片信息查看均按预期工作
+
+### 2026-05-19：对话测试 / Prompt 调试台 v2 知识库上下文 mock 联动
+
+内容：
+- 扩展 `frontend/src/types/chatTest.ts`，新增知识库 mock context 选项类型，并在测试表单、测试结果和测试记录中记录知识库标题、数量与 contextPreview
+- 扩展 `frontend/src/services/chatTest.ts`，通过已有 knowledge service 读取启用中的知识库文档，转换为 ChatTest 可用选项，不重复维护知识库 mock 数据
+- 完善 `frontend/src/views/chat-test/ChatTestView.vue`，支持选择一个或多个启用中的知识库文档，并使用 computed 推导 selectedKnowledgeDocs
+- 新增 `KnowledgeContextPanel.vue`，展示已选知识库文档摘要、tags、mock 切片数和 mock 向量状态，并提示当前为 mock context
+- 更新 `TestResultPanel.vue` 和 `TestRecordTable.vue`，展示本次测试使用的知识库标题、数量和 contextPreview
+- 新增 chat-test v2 模块设计文档，并同步 roadmap、模块文档索引、README 与 chat-test interview notes
+- 当前仍为 mock 阶段，不接后端，不真实调用模型 API，不做真实 RAG、embedding、向量库、相似度计算或召回排序
+
+影响范围：
+- frontend/src/views/chat-test
+- frontend/src/services/chatTest.ts
+- frontend/src/types/chatTest.ts
+- docs/modules/chat-test/v2-knowledge-context-mock.md
+- docs/modules/README.md
+- docs/development-log.md
+- docs/roadmap.md
+- README.md
+- notes/interview/chat-test-notes.md
+- notes/interview/chat-test-qa.md
+
+验证方式：
+- `cd frontend && npm run build`
+- 人工验证路径：访问 `/chat-test`，确认知识库选项只显示启用中文档、可多选、摘要预览正常、不选知识库也可运行基础 Prompt 测试、选择知识库后 mock 输出和最近测试记录体现知识库使用情况、清空结果不清空知识库选择

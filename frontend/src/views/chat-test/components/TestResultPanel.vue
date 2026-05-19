@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ChatTestResult } from '@/types/chatTest';
 
-// 展示 Prompt 调试台的运行结果状态，本组件只接收 props，不调用 service。
+// 展示 Prompt 调试台运行结果，本组件只接收 props，不调用 service、不维护业务状态。
 defineProps<{
   result: ChatTestResult | null;
   loading: boolean;
@@ -42,6 +42,25 @@ defineProps<{
         <span>耗时：{{ result.durationMs }}ms</span>
         <span>时间：{{ result.createdAt }}</span>
       </div>
+
+      <div v-if="result.usedKnowledgeTitles.length > 0" class="knowledge-summary">
+        <div class="knowledge-title">
+          <span>知识库 mock context</span>
+          <el-tag size="small" type="warning" effect="plain">非真实检索结果</el-tag>
+        </div>
+        <div class="knowledge-tags">
+          <el-tag
+            v-for="title in result.usedKnowledgeTitles"
+            :key="title"
+            size="small"
+            effect="plain"
+          >
+            {{ title }}
+          </el-tag>
+        </div>
+        <pre v-if="result.contextPreview" class="context-preview">{{ result.contextPreview }}</pre>
+      </div>
+
       <pre class="result-output">{{ result.output }}</pre>
     </div>
   </el-card>
@@ -52,9 +71,16 @@ defineProps<{
   height: 100%;
 }
 
-.card-header {
+.card-header,
+.knowledge-title,
+.knowledge-tags {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.card-header,
+.knowledge-title {
   justify-content: space-between;
 }
 
@@ -76,16 +102,45 @@ defineProps<{
   font-size: 13px;
 }
 
+.knowledge-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #f3d19e;
+  border-radius: 6px;
+  background: #fdf6ec;
+}
+
+.knowledge-title {
+  color: #303133;
+  font-weight: 600;
+}
+
+.knowledge-tags {
+  flex-wrap: wrap;
+}
+
+.context-preview,
 .result-output {
   margin: 0;
   padding: 16px;
-  min-height: 180px;
   border-radius: 6px;
-  background: #f7f8fa;
   color: #303133;
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
   font-family: inherit;
+}
+
+.context-preview {
+  max-height: 220px;
+  overflow: auto;
+  background: #fffaf2;
+}
+
+.result-output {
+  min-height: 180px;
+  background: #f7f8fa;
 }
 </style>
