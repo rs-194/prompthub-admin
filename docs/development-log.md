@@ -309,3 +309,31 @@
 - 人工验证路径：访问 `/login`，使用错误账号确认错误提示，使用 `admin / 123456` 确认登录成功
 - 人工验证路径：未登录访问 `/dashboard`、`/prompts`、`/models`、`/knowledge`、`/chat-test`、`/settings`，确认跳转 `/login` 且保留 redirect
 - 人工验证路径：登录后刷新页面确认恢复登录态，访问 `/login` 确认跳转 `/dashboard`，点击 Header 退出登录确认清理状态并跳转 `/login`
+
+### 2026-05-23：对话测试 / Prompt 调试台 v3 测试参数区 + mock 流式输出
+
+内容：
+- 扩展 `frontend/src/types/chatTest.ts`，新增 `ChatTestOutputFormat`、`ChatTestParams`，并在表单、结果和测试记录中保存参数与参数摘要
+- 扩展 `frontend/src/services/chatTest.ts`，新增 `buildParamsSummary()` 和 `createMockStreamChunks()`，让 `runMockPromptTest()` 接收参数并生成完整 mock 输出
+- 新增 `frontend/src/views/chat-test/components/TestParameterPanel.vue`，展示 temperature、maxTokens、outputFormat，并通过 `v-model` 回传参数
+- 完善 `frontend/src/views/chat-test/ChatTestView.vue`，使用前端 timer 模拟 mock streaming，支持运行中停止生成、清空结果和组件卸载时清理 timer
+- 更新 `TestResultPanel.vue`，支持展示生成中 streamingText、停止后的草稿和最终结果参数摘要
+- 更新 `TestRecordTable.vue`，新增短参数摘要列，避免记录表过宽
+- 新增 chat-test v3 模块设计文档，并同步 roadmap、模块文档索引、README 与 chat-test interview notes
+- 当前仍为 mock 阶段，不接后端，不真实调用模型 API，不做真实 SSE，不做真实 temperature 采样、maxTokens 截断或模型格式约束
+
+影响范围：
+- frontend/src/views/chat-test
+- frontend/src/services/chatTest.ts
+- frontend/src/types/chatTest.ts
+- docs/modules/chat-test/v3-params-and-mock-streaming.md
+- docs/modules/README.md
+- docs/development-log.md
+- docs/roadmap.md
+- README.md
+- notes/interview/chat-test-notes.md
+- notes/interview/chat-test-qa.md
+
+验证方式：
+- `cd frontend && npm run build`
+- 人工验证路径：访问 `/chat-test`，确认参数区正常显示，可修改 temperature、maxTokens、outputFormat；不选知识库和选择知识库均可运行；点击运行后结果区分段追加文本；运行中按钮禁用且可停止生成；停止生成不保存成功记录；完成后保存测试记录并展示参数摘要；清空结果不清空 prompt / model / knowledge / params

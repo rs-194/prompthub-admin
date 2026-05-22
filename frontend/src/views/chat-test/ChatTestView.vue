@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import KnowledgeContextPanel from './components/KnowledgeContextPanel.vue';
+import TestParameterPanel from './components/TestParameterPanel.vue';
 import TestRecordTable from './components/TestRecordTable.vue';
 import TestResultPanel from './components/TestResultPanel.vue';
 import {
+  createMockStreamChunks,
   getChatTestKnowledgeOptions,
   getChatTestModelOptions,
   getChatTestPromptOptions,
@@ -15,6 +17,7 @@ import type {
   ChatTestFormData,
   ChatTestKnowledgeOption,
   ChatTestModelOption,
+  ChatTestParams,
   ChatTestPromptOption,
   ChatTestRecord,
   ChatTestRecordInput,
@@ -32,6 +35,17 @@ const testResult = ref<ChatTestResult | null>(null);
 const testRecords = ref<ChatTestRecord[]>([]);
 const loading = ref(false);
 const errorMessage = ref('');
+const testParams = ref<ChatTestParams>({
+  temperature: 0.7,
+  maxTokens: 800,
+  outputFormat: 'markdown',
+});
+const streamingText = ref('');
+const streaming = ref(false);
+const streamTimerId = ref<ReturnType<typeof window.setTimeout> | null>(null);
+const streamChunks = ref<string[]>([]);
+const streamChunkIndex = ref(0);
+const pendingStreamResult = ref<ChatTestResult | null>(null);
 
 const selectedPrompt = computed(() =>
   promptOptions.value.find((prompt) => prompt.id === selectedPromptId.value),
@@ -60,7 +74,8 @@ const canRunTest = computed(
     Boolean(selectedPrompt.value) &&
     Boolean(selectedModel.value) &&
     userInput.value.trim().length > 0 &&
-    !loading.value,
+    !loading.value &&
+    !streaming.value,
 );
 
 /**
@@ -135,11 +150,11 @@ function buildKnowledgeContextPreview(documents: ChatTestKnowledgeOption[]) {
 /**
  * 构造保存测试记录所需的基础数据。
  *
- * 运行测试成功后调用，参数是 mock 测试结果；返回值交给 saveChatTestRecord 生成完整记录。
- * 本函数会保存 knowledgeTitles 和 contextPreview，但这些字段只表示手动选择的 mock context，
- * 不表示真实 RAG 结果。
+ * 运行测试完整结束后调用，参数是最终 mock 测试结果；返回值交给 saveChatTestRecord 生成完整记录。
+ * 本函数会保存 knowledgeTitles、contextPreview 和 params，但这些字段只表示前端 mock 调试上下文，
+ * 不表示真实 RAG、真实采样、真实 token 截断或真实模型格式约束。
  *
- * @param result 本次 mock 测试返回的结果
+ * @param result 本次完整 mock 测试返回的最终结果
  * @returns 保存测试记录所需的基础数据
  */
 function buildRecordInput(result: ChatTestResult): ChatTestRecordInput {
@@ -151,6 +166,7 @@ function buildRecordInput(result: ChatTestResult): ChatTestRecordInput {
     durationMs: result.durationMs,
     knowledgeTitles: [...result.usedKnowledgeTitles],
     contextPreview: result.contextPreview,
+    params: { ...result.params },
   };
 }
 
@@ -158,17 +174,23 @@ function buildRecordInput(result: ChatTestResult): ChatTestRecordInput {
  * 运行一次 Prompt mock 测试。
  *
  * 用户点击“运行测试”时调用，负责校验 prompt / model / userInput，读取 selectedKnowledgeDocs，
- * 生成 mock contextPreview，调用 runMockPromptTest，并保存一条包含知识库标题和数量的测试记录。
- * 当前不真实调用模型 API，不做 embedding，不接向量数据库；知识库上下文只来自手动选择的 mock 元数据。
+ * 生成 mock contextPreview，携带当前测试参数调用 runMockPromptTest，再把完整结果拆成 chunks 启动前端 timer。
+ * 当前不真实调用模型 API，不做真实 SSE，不做真实 temperature 采样或 maxTokens 截断；
+ * 后续接真实 LLM API / fetch stream 时，优先替换 service 和 streaming 获取逻辑。
  *
- * @returns 运行完成后的空结果
+ * @returns 启动 mock streaming 后的空结果
  */
 async function handleRunTest() {
+  if (loading.value || streaming.value) {
+    return;
+  }
+
   if (!selectedPrompt.value || !selectedModel.value || !canRunTest.value) {
     errorMessage.value = '请先选择提示词、模型配置并输入测试内容';
     return;
   }
 
+  clearStreamingState({ clearResult: true });
   const currentKnowledgeDocs = selectedKnowledgeDocs.value;
   const contextPreview = buildKnowledgeContextPreview(currentKnowledgeDocs);
   const formData: ChatTestFormData = {
@@ -178,6 +200,7 @@ async function handleRunTest() {
     knowledgeIds: selectedKnowledgeIds.value,
     selectedKnowledgeDocs: currentKnowledgeDocs,
     contextPreview,
+    params: { ...testParams.value },
   };
 
   loading.value = true;
@@ -185,44 +208,198 @@ async function handleRunTest() {
 
   try {
     const result = await runMockPromptTest(formData);
-    testResult.value = result;
-    await saveChatTestRecord(buildRecordInput(result));
-    await refreshTestRecords();
+    const chunks = createMockStreamChunks(result.output);
+    startMockStreaming(chunks, result);
   } catch {
     errorMessage.value = '运行测试失败，请检查输入后重试';
-  } finally {
     loading.value = false;
+  }
+}
+
+/**
+ * 启动前端 mock 流式输出。
+ *
+ * `handleRunTest` 生成完整 mock result 和 chunks 后调用。参数 chunks 是 service 从完整输出拆出的文本片段，
+ * finalResult 是最终要保存和展示的完整结果。本函数只用浏览器 timer 模拟分段追加，不是真实 SSE；
+ * 后续接 FastAPI StreamingResponse 或 fetch stream 时，应替换这里的启动与消费逻辑。
+ *
+ * @param chunks 待逐段追加到结果区的 mock 文本片段
+ * @param finalResult streaming 完成后要展示并保存记录的完整 mock 结果
+ * @returns 启动后的空结果
+ */
+function startMockStreaming(chunks: string[], finalResult: ChatTestResult) {
+  streamChunks.value = chunks;
+  streamChunkIndex.value = 0;
+  pendingStreamResult.value = finalResult;
+  streamingText.value = '';
+  testResult.value = null;
+  streaming.value = true;
+  appendNextChunk();
+}
+
+/**
+ * 追加下一段 mock 输出。
+ *
+ * 由 `startMockStreaming` 和内部 timer 调用，每次向 streamingText 追加一个 chunk。
+ * chunks 耗尽时进入 finishMockStreaming。当前只是 setTimeout 模拟，不做真实 token 流或 SSE 协议；
+ * 后续真实流式接入时，应改为消费 EventSource 或 fetch stream 的数据事件。
+ *
+ * @returns 追加完成后的空结果
+ */
+function appendNextChunk() {
+  if (!streaming.value) {
+    return;
+  }
+
+  const nextChunk = streamChunks.value[streamChunkIndex.value];
+
+  if (nextChunk === undefined) {
+    void finishMockStreaming();
+    return;
+  }
+
+  streamingText.value += nextChunk;
+  streamChunkIndex.value += 1;
+  streamTimerId.value = window.setTimeout(appendNextChunk, 180);
+}
+
+/**
+ * 完成前端 mock 流式输出。
+ *
+ * chunks 追加完成后调用，负责清理 timer、设置最终 result、保存成功测试记录并刷新最近记录。
+ * 只有完整结束才保存成功记录；停止生成不会进入这里保存。当前记录仍是前端内存 mock，
+ * 后续接真实后端时应替换 saveChatTestRecord / getChatTestRecords 为持久化接口。
+ *
+ * @returns 完成保存和刷新后的空结果
+ */
+async function finishMockStreaming() {
+  const finalResult = pendingStreamResult.value;
+
+  if (!finalResult) {
+    clearStreamingState({ clearResult: false });
+    loading.value = false;
+    return;
+  }
+
+  if (streamTimerId.value) {
+    window.clearTimeout(streamTimerId.value);
+    streamTimerId.value = null;
+  }
+
+  try {
+    testResult.value = finalResult;
+    await saveChatTestRecord(buildRecordInput(finalResult));
+    await refreshTestRecords();
+  } catch {
+    errorMessage.value = '保存测试记录失败，请稍后重试';
+  } finally {
+    streaming.value = false;
+    loading.value = false;
+    streamChunks.value = [];
+    streamChunkIndex.value = 0;
+    pendingStreamResult.value = null;
+  }
+}
+
+/**
+ * 停止当前 mock 流式输出。
+ *
+ * 用户点击“停止生成”时调用，只清理前端 timer 并恢复 loading / streaming 状态，
+ * 不代表真实 API cancel，也不会把中途 streamingText 保存为成功测试记录。
+ * 后续真实 SSE / fetch stream 阶段可在这里接入 AbortController 或后端取消机制。
+ *
+ * @returns 停止后的空结果
+ */
+function stopMockStreaming() {
+  if (!streaming.value && !loading.value) {
+    return;
+  }
+
+  if (streamTimerId.value) {
+    window.clearTimeout(streamTimerId.value);
+    streamTimerId.value = null;
+  }
+
+  if (streamingText.value.trim().length > 0) {
+    streamingText.value = `${streamingText.value}\n【已停止生成】已停止前端 mock streaming，未保存为成功测试记录。`;
+  }
+
+  streaming.value = false;
+  loading.value = false;
+  streamChunks.value = [];
+  streamChunkIndex.value = 0;
+  pendingStreamResult.value = null;
+}
+
+/**
+ * 清理 mock streaming 临时状态。
+ *
+ * 清空结果、重新运行或组件卸载时调用，负责清理 timer、streamingText 和临时 chunks。
+ * 当前只处理前端 setTimeout 模拟流式输出；后续真实 SSE / fetch stream 接入时，
+ * 这里应同步清理真实流连接或 abort 控制器。
+ *
+ * @param options.clearResult 是否同时清空最终测试结果
+ * @returns 清理完成后的空结果
+ */
+function clearStreamingState(options: { clearResult: boolean }) {
+  if (streamTimerId.value) {
+    window.clearTimeout(streamTimerId.value);
+    streamTimerId.value = null;
+  }
+
+  streamingText.value = '';
+  streaming.value = false;
+  streamChunks.value = [];
+  streamChunkIndex.value = 0;
+  pendingStreamResult.value = null;
+
+  if (options.clearResult) {
+    testResult.value = null;
   }
 }
 
 /**
  * 清空测试输入和当前结果。
  *
- * 用户点击“清空”时调用，清空 userInput、testResult 和 errorMessage；不清空 selectedKnowledgeIds，
- * 因为知识库选择是增强上下文配置，不属于本按钮的输入文本清理范围。
+ * 用户点击“清空”时调用，清空 userInput、testResult、streamingText 和 errorMessage；不清空 selectedKnowledgeIds
+ * 和 testParams，因为它们属于调试配置。若存在 mock streaming，会先清理 timer，避免继续追加输出。
  *
  * @returns 清空完成后的空结果
  */
 function handleClearInput() {
   userInput.value = '';
-  testResult.value = null;
+  clearStreamingState({ clearResult: true });
   errorMessage.value = '';
+  loading.value = false;
 }
 
 /**
  * 清空当前测试结果。
  *
- * 只清空 testResult 和 errorMessage，不影响用户输入、最近测试记录和 selectedKnowledgeIds。
+ * 只清空 testResult、streamingText 和 errorMessage，不影响用户输入、最近测试记录、selectedKnowledgeIds 和 testParams。
+ * 若前端 mock streaming 正在运行，会先清理 timer；当前不涉及真实 SSE 连接。
  *
  * @returns 清空完成后的空结果
  */
 function handleClearResult() {
-  testResult.value = null;
+  clearStreamingState({ clearResult: true });
   errorMessage.value = '';
+  loading.value = false;
 }
 
 onMounted(() => {
   void loadInitialData();
+});
+
+/**
+ * 组件卸载时清理前端 mock streaming timer。
+ *
+ * 页面切换或组件销毁时调用，避免 setTimeout 在组件卸载后继续追加 streamingText。
+ * 当前只清理前端 timer；后续真实 SSE / LLM API 接入时，应在同一位置关闭流连接或取消请求。
+ */
+onBeforeUnmount(() => {
+  clearStreamingState({ clearResult: false });
+  loading.value = false;
 });
 </script>
 
@@ -232,7 +409,7 @@ onMounted(() => {
       <div>
         <h1>对话测试 / Prompt 调试台</h1>
         <p>
-          用于验证提示词模板、模型配置与知识库 mock context 的组合效果。当前为 v2 mock 版本，不接后端，不真实调用模型 API，不做真实 RAG。
+          用于验证提示词模板、模型配置、知识库 mock context 与测试参数的组合效果。当前为 v3 mock streaming 版本，不接后端，不真实调用模型 API，不做真实 SSE。
         </p>
       </div>
       <el-tag type="warning" effect="plain">Mock 调试</el-tag>
@@ -324,19 +501,27 @@ onMounted(() => {
             <div class="actions">
               <el-button
                 type="primary"
-                :loading="loading"
+                :loading="loading || streaming"
                 :disabled="!canRunTest"
                 @click="handleRunTest"
               >
                 运行测试
               </el-button>
-              <el-button :disabled="loading" @click="handleClearInput">清空</el-button>
-              <el-button :disabled="loading || !testResult" @click="handleClearResult">
+              <el-button v-if="streaming" type="warning" plain @click="stopMockStreaming">
+                停止生成
+              </el-button>
+              <el-button :disabled="loading || streaming" @click="handleClearInput">清空</el-button>
+              <el-button
+                :disabled="loading || streaming || (!testResult && !streamingText)"
+                @click="handleClearResult"
+              >
                 清空结果
               </el-button>
             </div>
           </el-form>
         </el-card>
+
+        <TestParameterPanel v-model="testParams" />
 
         <KnowledgeContextPanel :documents="selectedKnowledgeDocs" />
 
@@ -359,6 +544,8 @@ onMounted(() => {
       <TestResultPanel
         :result="testResult"
         :loading="loading"
+        :streaming="streaming"
+        :streaming-text="streamingText"
         :error-message="errorMessage"
       />
     </div>

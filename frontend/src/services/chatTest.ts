@@ -5,6 +5,7 @@ import type {
   ChatTestFormData,
   ChatTestKnowledgeOption,
   ChatTestModelOption,
+  ChatTestParams,
   ChatTestPromptOption,
   ChatTestRecord,
   ChatTestRecordInput,
@@ -48,6 +49,7 @@ function cloneRecord(record: ChatTestRecord): ChatTestRecord {
   return {
     ...record,
     knowledgeTitles: [...record.knowledgeTitles],
+    params: { ...record.params },
   };
 }
 
@@ -69,6 +71,31 @@ function buildKnowledgeReferenceText(documents: ChatTestKnowledgeOption[]) {
       ].join('\n');
     })
     .join('\n\n');
+}
+
+function getOutputFormatLabel(outputFormat: ChatTestParams['outputFormat']) {
+  const labelMap: Record<ChatTestParams['outputFormat'], string> = {
+    text: 'Text',
+    markdown: 'Markdown',
+    json: 'JSON',
+  };
+
+  return labelMap[outputFormat];
+}
+
+/**
+ * 生成测试参数摘要。
+ *
+ * 保存测试记录和展示结果时调用，参数是当前用户在调试台设置的 mock 参数；
+ * 返回值是短文本摘要，避免记录表过宽。当前只用于展示和记录，不代表真实 temperature 采样、
+ * maxTokens 截断或模型严格遵循输出格式。后续接真实 LLM API 时，可保留该展示函数，
+ * 但参数真实生效逻辑应由后端模型调用或流式接口实现。
+ *
+ * @param params 当前 Prompt 调试台 mock 测试参数
+ * @returns 简短参数摘要文本
+ */
+export function buildParamsSummary(params: ChatTestParams): string {
+  return `T=${params.temperature.toFixed(1)} / ${params.maxTokens} tokens / ${getOutputFormatLabel(params.outputFormat)}`;
 }
 
 /**
@@ -152,13 +179,14 @@ export async function getChatTestKnowledgeOptions(): Promise<ChatTestKnowledgeOp
 /**
  * 运行一次 mock Prompt 测试。
  *
- * 用户点击“运行测试”后由 View 调用，参数包含当前选择的 prompt、model、用户输入和手动选择的知识库文档。
+ * 用户点击“运行测试”后由 View 调用，参数包含当前选择的 prompt、model、用户输入、手动选择的知识库文档和 mock 测试参数。
  * 当前不是 RAG，不做后端请求、不调用真实模型 API、不做 embedding、不接向量数据库，也不做真实文本切片；
- * 当前只是把用户手动选择的知识库 summary 等 mock 元数据拼成 mock context。后续真实 RAG / LLM API
- * 接入时，优先替换本函数内部的上下文组装和模型调用逻辑。
+ * 当前只是把用户手动选择的知识库 summary 等 mock 元数据拼成 mock context，并把 temperature、maxTokens、
+ * outputFormat 写入 mock 文案。参数不做真实采样、截断或格式约束。后续真实 RAG / LLM API / SSE
+ * 接入时，优先替换本函数内部的上下文组装、模型调用和流式返回逻辑。
  *
- * @param data 本次测试的提示词、模型配置、用户输入和已选知识库 mock context 信息
- * @returns mock 测试结果
+ * @param data 本次测试的提示词、模型配置、用户输入、已选知识库 mock context 和测试参数
+ * @returns 完整 mock 测试结果，供前端再拆分为模拟流式 chunks
  */
 export async function runMockPromptTest(data: ChatTestFormData): Promise<ChatTestResult> {
   const [prompts, models] = await Promise.all([
@@ -175,11 +203,13 @@ export async function runMockPromptTest(data: ChatTestFormData): Promise<ChatTes
   const durationMs = 640 + Math.floor(Math.random() * 420);
   const usedKnowledgeTitles = data.selectedKnowledgeDocs.map((document) => document.title);
   const knowledgeReferenceText = buildKnowledgeReferenceText(data.selectedKnowledgeDocs);
+  const paramsSummary = buildParamsSummary(data.params);
   const output = [
     `【Mock 输出】已使用「${prompt.title}」和模型配置「${model.name}」生成测试结果。`,
     usedKnowledgeTitles.length > 0
       ? `本次参考了知识库 mock context：${usedKnowledgeTitles.join('、')}。这些内容来自手动选择的文档摘要，不是真实检索结果。`
       : '本次未选择知识库文档，按基础 Prompt 测试流程生成 mock 输出。',
+    `测试参数：${paramsSummary}。这些参数仅用于前端 mock 展示和记录摘要，不做真实 temperature 采样、maxTokens 截断或模型格式约束。`,
     '',
     `用户输入：${data.userInput.trim()}`,
     '',
@@ -187,7 +217,9 @@ export async function runMockPromptTest(data: ChatTestFormData): Promise<ChatTes
       ? ['知识库 mock context 摘要：', knowledgeReferenceText, '']
       : []),
     '模拟回答：',
-    '根据当前提示词要求，我会围绕输入内容给出结构化回复。这里是前端 mock 结果，用于验证调试台流程、结果展示和测试记录闭环；当前没有调用真实模型 API。',
+    data.params.outputFormat === 'json'
+      ? '{"summary":"这里是 JSON 风格的前端 mock 输出，用于验证参数区、流式展示和测试记录闭环。","mock":true}'
+      : '根据当前提示词要求，我会围绕输入内容给出结构化回复。这里是前端 mock 结果，用于验证调试台流程、结果展示和测试记录闭环；当前没有调用真实模型 API。',
     '',
     `参考提示词片段：${prompt.content.slice(0, 80)}`,
   ].join('\n');
@@ -201,20 +233,44 @@ export async function runMockPromptTest(data: ChatTestFormData): Promise<ChatTes
     contextPreview: data.contextPreview,
     durationMs,
     createdAt: getCurrentTimeText(),
+    params: { ...data.params },
+    paramsSummary,
   };
+}
+
+/**
+ * 拆分完整 mock 输出为前端模拟流式 chunks。
+ *
+ * `runMockPromptTest` 生成完整结果后由 View 调用，本函数只把完整 output 按行拆成字符串数组，
+ * 供前端 `setTimeout` 逐段追加展示。这里不做真实 token 切分，不模拟 SSE 协议，也不接 WebSocket。
+ * 后续接 FastAPI StreamingResponse、SSE 或 fetch stream 时，应优先替换 View 中消费 chunks 的逻辑，
+ * 或让 service 改为返回真实流式数据。
+ *
+ * @param output 完整 mock 输出文本
+ * @returns 用于前端 timer 追加展示的文本片段
+ */
+export function createMockStreamChunks(output: string): string[] {
+  const lines = output.split('\n');
+
+  return lines.map((line, index) => {
+    const lineBreak = index === lines.length - 1 ? '' : '\n';
+    return `${line}${lineBreak}`;
+  });
 }
 
 /**
  * 保存一条 mock 测试记录。
  *
- * 运行测试成功后由 View 调用，View 只传入保存记录需要的基础数据、知识库标题和 mock contextPreview；
- * id、createdAt、outputPreview、status 和 knowledgeCount 由 service 统一生成。当前记录只保存在前端内存中，
- * 且知识库信息只是手动选择文档的 mock context 记录，不是真实 RAG 结果。后续接后端时替换为持久化接口。
+ * 运行测试完整结束后由 View 调用，View 只传入保存记录需要的基础数据、知识库标题、mock contextPreview 和参数；
+ * id、createdAt、outputPreview、status、knowledgeCount 和 paramsSummary 由 service 统一生成。当前记录只保存在前端内存中，
+ * 且知识库信息只是手动选择文档的 mock context 记录，参数也只用于展示，不是真实 RAG 或真实模型调用结果。
+ * 后续接后端时替换为持久化接口，停止生成的中途内容不应作为成功记录保存。
  *
- * @param data 保存测试记录所需的基础输入、输出和知识库 mock context 信息
+ * @param data 保存测试记录所需的基础输入、输出、知识库 mock context 和参数信息
  * @returns 保存后的完整测试记录
  */
 export function saveChatTestRecord(data: ChatTestRecordInput): Promise<ChatTestRecord> {
+  const paramsSummary = buildParamsSummary(data.params);
   const record: ChatTestRecord = {
     id: getNextRecordId(),
     promptTitle: data.promptTitle,
@@ -227,6 +283,8 @@ export function saveChatTestRecord(data: ChatTestRecordInput): Promise<ChatTestR
     knowledgeTitles: [...data.knowledgeTitles],
     knowledgeCount: data.knowledgeTitles.length,
     contextPreview: data.contextPreview,
+    params: { ...data.params },
+    paramsSummary,
   };
 
   chatTestRecords.unshift(record);

@@ -6,6 +6,7 @@
 | --- | --- | --- | --- |
 | 对话测试 / Prompt 调试台 | v1 mock | `chat-test/v1-mock-design.md` | 已实现 |
 | 对话测试 / Prompt 调试台 | v2 knowledge-context mock | `chat-test/v2-knowledge-context-mock.md` | 已实现 |
+| 对话测试 / Prompt 调试台 | v3 params-and-mock-streaming | `chat-test/v3-params-and-mock-streaming.md` | 已实现 |
 | 知识库管理 | v1 mock | `knowledge/v1-mock-design.md` | 已实现 |
 | 认证与路由访问控制 | v1 mock | `auth/v1-mock-design.md` | 已实现 |
 

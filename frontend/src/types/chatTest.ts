@@ -29,6 +29,14 @@ export interface ChatTestKnowledgeOption {
   enabled: boolean;
 }
 
+export type ChatTestOutputFormat = 'text' | 'markdown' | 'json';
+
+export interface ChatTestParams {
+  temperature: number;
+  maxTokens: number;
+  outputFormat: ChatTestOutputFormat;
+}
+
 export interface ChatTestFormData {
   promptId: number;
   modelId: number;
@@ -36,6 +44,7 @@ export interface ChatTestFormData {
   knowledgeIds: number[];
   selectedKnowledgeDocs: ChatTestKnowledgeOption[];
   contextPreview: string;
+  params: ChatTestParams;
 }
 
 export interface ChatTestResult {
@@ -47,6 +56,8 @@ export interface ChatTestResult {
   contextPreview: string;
   durationMs: number;
   createdAt: string;
+  params: ChatTestParams;
+  paramsSummary: string;
 }
 
 export interface ChatTestRecordInput {
@@ -57,6 +68,7 @@ export interface ChatTestRecordInput {
   durationMs: number;
   knowledgeTitles: string[];
   contextPreview: string;
+  params: ChatTestParams;
 }
 
 export type ChatTestRecordStatus = 'success' | 'failed';
@@ -73,4 +85,6 @@ export interface ChatTestRecord {
   knowledgeTitles: string[];
   knowledgeCount: number;
   contextPreview: string;
+  params: ChatTestParams;
+  paramsSummary: string;
 }

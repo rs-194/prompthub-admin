@@ -5,6 +5,8 @@ import type { ChatTestResult } from '@/types/chatTest';
 defineProps<{
   result: ChatTestResult | null;
   loading: boolean;
+  streaming: boolean;
+  streamingText: string;
   errorMessage: string;
 }>();
 </script>
@@ -18,17 +20,25 @@ defineProps<{
       </div>
     </template>
 
-    <div v-if="loading" class="result-state">
-      <el-skeleton :rows="5" animated />
-    </div>
-
     <el-alert
-      v-else-if="errorMessage"
+      v-if="errorMessage"
       :title="errorMessage"
       type="error"
       show-icon
       :closable="false"
     />
+
+    <div v-else-if="streaming || streamingText" class="result-content">
+      <div class="streaming-title">
+        <span>{{ streaming ? '生成中' : '已停止生成' }}</span>
+        <el-tag size="small" type="warning" effect="plain">Mock streaming</el-tag>
+      </div>
+      <pre class="result-output streaming-output">{{ streamingText || '正在准备 mock 输出...' }}</pre>
+    </div>
+
+    <div v-else-if="loading" class="result-state">
+      <el-skeleton :rows="5" animated />
+    </div>
 
     <el-empty
       v-else-if="!result"
@@ -41,6 +51,7 @@ defineProps<{
         <span>模型：{{ result.usedModelName }}</span>
         <span>耗时：{{ result.durationMs }}ms</span>
         <span>时间：{{ result.createdAt }}</span>
+        <span>参数：{{ result.paramsSummary }}</span>
       </div>
 
       <div v-if="result.usedKnowledgeTitles.length > 0" class="knowledge-summary">
@@ -73,14 +84,16 @@ defineProps<{
 
 .card-header,
 .knowledge-title,
-.knowledge-tags {
+.knowledge-tags,
+.streaming-title {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .card-header,
-.knowledge-title {
+.knowledge-title,
+.streaming-title {
   justify-content: space-between;
 }
 
@@ -100,6 +113,11 @@ defineProps<{
   gap: 8px 20px;
   color: #606266;
   font-size: 13px;
+}
+
+.streaming-title {
+  color: #303133;
+  font-weight: 600;
 }
 
 .knowledge-summary {
@@ -142,5 +160,9 @@ defineProps<{
 .result-output {
   min-height: 180px;
   background: #f7f8fa;
+}
+
+.streaming-output {
+  border: 1px dashed #dcdfe6;
 }
 </style>

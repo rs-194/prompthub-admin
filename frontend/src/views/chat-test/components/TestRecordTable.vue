@@ -32,6 +32,7 @@ defineProps<{
           </span>
         </template>
       </el-table-column>
+      <el-table-column prop="paramsSummary" label="参数" width="170" show-overflow-tooltip />
       <el-table-column prop="userInput" label="测试输入" min-width="180" show-overflow-tooltip />
       <el-table-column prop="outputPreview" label="输出摘要" min-width="220" show-overflow-tooltip />
       <el-table-column prop="durationMs" label="耗时" width="100">
