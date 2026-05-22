@@ -26,16 +26,19 @@ src/
 - 按页面维度组织视图。
 - 当前阶段以页面骨架与基础标题展示为主。
 - 后续页面逻辑按模块逐步实现，避免在单文件堆积复杂逻辑。
+- `src/views/login/LoginView.vue` 承载认证与路由访问控制 v1 mock 登录页，不使用后台主布局。
 
 ## 4. `src/router` 的职责
 - 统一维护前端路由配置。
 - 管理后台主布局与各页面入口映射。
 - 路由变更应保持与菜单和页面目录同步。
+- 当前包含 v1 mock 路由守卫：后台页面通过 `meta.requiresAuth` 标记需要登录，未登录访问时跳转 `/login`。
 
 ## 5. `src/stores` 的职责
 - 管理全局/跨页面状态。
 - 当前主要用于后台 UI 状态（如侧边栏折叠）。
 - 后续如有业务状态，按模块拆分 store。
+- `auth.ts` 用于认证与路由访问控制 v1 mock，管理 mock token、用户信息和 localStorage 登录态恢复。普通业务列表数据不迁入 Pinia。
 
 ## 6. `src/config` 的职责
 - 存放相对稳定的配置数据。
@@ -54,6 +57,7 @@ src/
 - `src/api`（计划新增）：按业务模块封装接口请求。
 - `src/services`（当前已存在）：可承载服务封装与请求调用逻辑。
 - 当前后端待接入，因此接口层仍处于预留/待完善状态。
+- `services/auth.ts` 当前封装 mock 登录与退出登录，后续接 FastAPI 后优先替换其内部实现。
 
 ## 10. 全局样式使用边界
 - 全局样式仅用于：基础布局、reset、通用类、主题变量。
@@ -99,3 +103,10 @@ key: 'prompts'
 - `frontend/src/services/knowledge.ts` 封装知识库 mock service，后续接后端时优先替换 service 内部实现。
 - `frontend/src/types/knowledge.ts` 定义知识库文档元数据、来源类型、启用状态筛选与 mock 向量化状态类型。
 - 当前知识库模块不真实上传文件、不真实切片、不调用 embedding、不接向量数据库、不做真实 RAG。
+
+4.auth认证模块
+- `frontend/src/views/login/LoginView.vue` 承载 mock 登录页。
+- `frontend/src/services/auth.ts` 封装 mock 登录与退出登录，后续接后端时优先替换 service 内部实现。
+- `frontend/src/stores/auth.ts` 管理 mock token、用户信息和 localStorage 登录态恢复。
+- `frontend/src/router/index.ts` 通过 `beforeEach` 做后台路由访问控制。
+- 当前认证模块不接后端、不做真实 JWT 校验、不做 RBAC、不做菜单权限或按钮权限。

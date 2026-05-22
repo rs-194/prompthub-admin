@@ -276,3 +276,36 @@
 验证方式：
 - `cd frontend && npm run build`
 - 人工验证路径：访问 `/chat-test`，确认知识库选项只显示启用中文档、可多选、摘要预览正常、不选知识库也可运行基础 Prompt 测试、选择知识库后 mock 输出和最近测试记录体现知识库使用情况、清空结果不清空知识库选择
+
+### 2026-05-22：认证与路由访问控制 v1 mock
+
+内容：
+- 新增 `frontend/src/types/auth.ts`，定义 mock 登录用户、登录表单和登录响应类型
+- 新增 `frontend/src/services/auth.ts`，封装 `mockLogin` 和 `mockLogout`，当前只校验内置 mock 账号 `admin / 123456`
+- 新增 `frontend/src/stores/auth.ts`，使用 Pinia 管理 token、user 和 initialized，并通过 localStorage 恢复 mock 登录态
+- 新增 `frontend/src/views/login/LoginView.vue`，提供 mock 登录页、错误提示、loading 和 redirect 跳转
+- 扩展 `frontend/src/router/index.ts`，新增 `/login` 路由，并为后台页面增加 `meta.requiresAuth` 与 beforeEach 守卫
+- 扩展 `frontend/src/layout/components/AppHeader.vue`，展示当前用户昵称或用户名，并支持退出登录
+- 在 `frontend/src/main.ts` 安装 Pinia
+- 新增认证模块设计文档与 interview notes，明确当前为 mock 登录，后端待接入，不做真实 JWT / RBAC / 菜单权限 / 按钮权限
+
+影响范围：
+- frontend/src/views/login
+- frontend/src/services/auth.ts
+- frontend/src/types/auth.ts
+- frontend/src/stores/auth.ts
+- frontend/src/router/index.ts
+- frontend/src/layout/components/AppHeader.vue
+- frontend/src/main.ts
+- docs/modules
+- docs/development-log.md
+- docs/roadmap.md
+- docs/frontend-architecture.md
+- README.md
+- notes/interview
+
+验证方式：
+- `cd frontend && npm run build`
+- 人工验证路径：访问 `/login`，使用错误账号确认错误提示，使用 `admin / 123456` 确认登录成功
+- 人工验证路径：未登录访问 `/dashboard`、`/prompts`、`/models`、`/knowledge`、`/chat-test`、`/settings`，确认跳转 `/login` 且保留 redirect
+- 人工验证路径：登录后刷新页面确认恢复登录态，访问 `/login` 确认跳转 `/dashboard`，点击 Header 退出登录确认清理状态并跳转 `/login`
