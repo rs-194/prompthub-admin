@@ -37,7 +37,14 @@ export const useAuthStore = defineStore('auth', () => {
    * 返回值含义：无返回值，执行后视为未登录状态。
    * mock 边界：当前只清理前端 mock 登录态，不处理后端 token 吊销。
    * 后端替换点：后续可在 logout 调用后端退出接口后继续复用本函数。
-   */
+/**
+   * 恢复登录态，负责从 localStorage 读取 mock token 和用户信息。
+   * 调用时机：路由守卫首次执行且 auth store 未初始化时。
+   * 参数含义：无参数。
+   * 返回值含义：无返回值，执行后 initialized 会被置为 true。
+   * mock 边界：当前只恢复本地 mock 登录态，不向后端校验 token 有效性。
+   * 后端替换点：后续可增加 FastAPI token 校验或当前用户接口。
+   */   
   const clearAuth = (): void => {
     token.value = '';
     user.value = null;
@@ -71,14 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearAuth();
   };
 
-  /**
-   * 恢复登录态，负责从 localStorage 读取 mock token 和用户信息。
-   * 调用时机：路由守卫首次执行且 auth store 未初始化时。
-   * 参数含义：无参数。
-   * 返回值含义：无返回值，执行后 initialized 会被置为 true。
-   * mock 边界：当前只恢复本地 mock 登录态，不向后端校验 token 有效性。
-   * 后端替换点：后续可增加 FastAPI token 校验或当前用户接口。
-   */
+  
   const restoreAuth = (): void => {
     const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
     const storedUser = localStorage.getItem(USER_STORAGE_KEY);
