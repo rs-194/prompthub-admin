@@ -337,3 +337,28 @@
 验证方式：
 - `cd frontend && npm run build`
 - 人工验证路径：访问 `/chat-test`，确认参数区正常显示，可修改 temperature、maxTokens、outputFormat；不选知识库和选择知识库均可运行；点击运行后结果区分段追加文本；运行中按钮禁用且可停止生成；停止生成不保存成功记录；完成后保存测试记录并展示参数摘要；清空结果不清空 prompt / model / knowledge / params
+
+### 2026-05-23：FastAPI 后端项目骨架 Phase 2.1
+
+内容：
+- 新增 `backend/` 后端目录，建立 FastAPI 最小应用入口
+- 新增基础配置，包含 app name、`/api/v1` 前缀、SQLite database url 和 CORS origins
+- 新增 SQLAlchemy engine、SessionLocal、Base 和 get_db 基础连接配置，当前不创建业务表
+- 新增 `GET /api/v1/health` 健康检查接口
+- 新增后端 README 和后端骨架模块文档
+- 当前仅为后端骨架，不实现 TestRecord CRUD、不实现 ChatTest stream、不接前端、不做真实 LLM / RAG / auth
+
+影响范围：
+- backend
+- docs/modules/backend
+- docs/modules/README.md
+- docs/development-log.md
+- docs/roadmap.md
+- docs/frontend-architecture.md
+- README.md
+
+验证方式：
+- `cd backend && python -m pip install -r requirements.txt`
+- `cd backend && python -m compileall app`
+- `cd backend && python -m uvicorn app.main:app --reload`
+- 访问 `http://localhost:8000/api/v1/health`，确认返回 `status: ok`

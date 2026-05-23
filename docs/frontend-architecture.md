@@ -110,3 +110,11 @@ key: 'prompts'
 - `frontend/src/stores/auth.ts` 管理 mock token、用户信息和 localStorage 登录态恢复。
 - `frontend/src/router/index.ts` 通过 `beforeEach` 做后台路由访问控制。
 - 当前认证模块不接后端、不做真实 JWT 校验、不做 RBAC、不做菜单权限或按钮权限。
+
+## 14. 后端骨架状态
+
+- `backend/` 当前为 FastAPI Phase 2.1 最小骨架，不属于前端业务目录。
+- 后端当前只包含 app 入口、基础配置、SQLite / SQLAlchemy 连接、`/api/v1` 路由入口和 health check。
+- 前端 `src/services` 仍保持现有 mock service，当前没有迁移到后端接口。
+- 后端尚未实现 TestRecord CRUD、ChatTest stream、真实 LLM、真实 RAG、真实认证 / JWT / RBAC。
+- 后续接入后端时，应优先替换对应模块 service 内部实现，避免直接在 View 中写接口调用。

@@ -32,8 +32,8 @@
 
 ## v0.7 FastAPI 后端接入
 - 目标：完成前后端基础联调。
-- 计划内容：接口规范、鉴权基础、关键模块 API 对接。
-- 当前状态：计划中。
+- 计划内容：接口规范、后端项目骨架、TestRecord 持久化、ChatTest mock stream、后续鉴权基础与关键模块 API 对接。
+- 当前状态：进行中（Phase 2.1 FastAPI 后端最小骨架已完成，包含 CORS、SQLite / SQLAlchemy 基础连接、`/api/v1` 路由入口和 health check；尚未实现 TestRecord CRUD、ChatTest stream、真实 LLM、真实 RAG、真实认证 / JWT / RBAC，也尚未接前端）。
 
 ## v0.8 登录与权限控制
 - 目标：完善后台访问控制能力。
