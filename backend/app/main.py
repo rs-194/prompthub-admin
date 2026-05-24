@@ -3,9 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.db.session import Base, engine
+from app.modules.test_records import models as test_record_models
 
 
-# FastAPI 应用入口：只注册通用中间件和 v1 路由，不承载业务逻辑。
+def init_db() -> None:
+    """Create development tables for registered SQLAlchemy models."""
+
+    _ = test_record_models
+    Base.metadata.create_all(bind=engine)
+
+
 app = FastAPI(title=settings.app_name)
 
 app.add_middleware(
@@ -17,3 +25,8 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    init_db()

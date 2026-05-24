@@ -362,3 +362,35 @@
 - `cd backend && python -m compileall app`
 - `cd backend && python -m uvicorn app.main:app --reload`
 - 访问 `http://localhost:8000/api/v1/health`，确认返回 `status: ok`
+
+### 2026-05-24：FastAPI 后端 TestRecord 持久化 Phase 2.2
+
+内容：
+- 新增 `backend/app/modules/test_records/`，包含 TestRecord ORM model、Pydantic schemas 和 service
+- 新增 `backend/app/api/v1/test_records.py`，提供测试记录创建、分页列表、详情和删除接口
+- 在 `/api/v1` 路由入口挂载 `/test-records`，并保留 health check
+- 启动时通过 `Base.metadata.create_all(bind=engine)` 创建 `test_records` 表
+- 列表接口只返回 `outputPreview`，详情接口返回完整 `output`
+- 当前仍不接前端，不实现 ChatTest stream，不调用真实 LLM，不做真实 RAG，不做 auth / JWT / RBAC，不迁移 Prompt / Model / Knowledge 后端表
+
+影响范围：
+- backend/app/modules/test_records
+- backend/app/api/v1
+- backend/app/main.py
+- docs/modules/backend
+- docs/modules/README.md
+- docs/development-log.md
+- docs/roadmap.md
+- backend/README.md
+- README.md
+- notes/interview/chat-test-notes.md
+- notes/interview/chat-test-qa.md
+
+验证方式：
+- `cd backend && python -m compileall app`
+- `cd backend && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`
+- 验证 `GET /api/v1/health`
+- 验证 `POST /api/v1/test-records` 创建记录，并确认 `knowledgeCount` 由后端校准
+- 验证 `GET /api/v1/test-records` 列表不包含完整 `output`
+- 验证 `GET /api/v1/test-records/{id}` 详情包含完整 `output`
+- 验证 `DELETE /api/v1/test-records/{id}` 删除记录，删除后详情返回 404
