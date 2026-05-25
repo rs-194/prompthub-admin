@@ -23,7 +23,7 @@
 ## v0.5 对话测试
 - 目标：提供后台内的模型对话测试能力。
 - 计划内容：测试输入区、历史记录、基础参数控制。
-- 当前状态：进行中（已完成对话测试 / Prompt 调试台 v3 mock，支持提示词模板选择、启用模型配置选择、启用中的知识库文档选择、知识库 mock context 预览、temperature / maxTokens / outputFormat 参数设置、前端 timer 模拟分段流式输出、停止生成和包含参数摘要的前端内存测试记录；当前不接后端、不真实调用模型 API、不做真实 SSE、不做真实 RAG；真实调用和记录持久化仍待实现）。
+- 当前状态：进行中（已完成对话测试 / Prompt 调试台 v3 mock，支持提示词模板选择、启用模型配置选择、启用中的知识库文档选择、知识库 mock context 预览、temperature / maxTokens / outputFormat 参数设置、前端 timer 模拟分段流式输出、停止生成和包含参数摘要的前端内存测试记录；后端已完成 Phase 2.3 真实 LLM 非流式调用接口并可保存 TestRecord，但前端尚未接入；当前不做真实 SSE，不做真实 RAG）。
 
 ## v0.6 知识库管理
 - 目标：提供知识条目管理与检索基础能力。
@@ -33,7 +33,13 @@
 ## v0.7 FastAPI 后端接入
 - 目标：完成前后端基础联调。
 - 计划内容：接口规范、后端项目骨架、TestRecord 持久化、ChatTest mock stream、后续鉴权基础与关键模块 API 对接。
-- 当前状态：进行中（Phase 2.1 FastAPI 后端最小骨架已完成；Phase 2.2 已新增 TestRecord 持久化 CRUD 接口，支持创建、分页列表、详情、删除和 keyword 轻量查询；当前尚未接前端，尚未实现 ChatTest stream、真实 LLM、真实 RAG、真实认证 / JWT / RBAC，也未迁移 Prompt / Model / Knowledge 后端表）。
+- 当前状态：进行中（Phase 2.1 FastAPI 后端最小骨架已完成；Phase 2.2 已新增 TestRecord 持久化 CRUD 接口，支持创建、分页列表、详情、删除和 keyword 轻量查询；Phase 2.3 已新增 `POST /api/v1/chat-test/run`，支持真实 LLM 非流式调用并保存 TestRecord；当前尚未接前端，尚未实现 ChatTest stream / SSE / fetch stream、真实 RAG、真实认证 / JWT / RBAC，也未迁移 Prompt / Model / Knowledge 后端表）。
+
+## Phase 2 后续顺序
+- Phase 2.4：前端 ChatTest 接入 `/api/v1/chat-test/run`，展示真实 output，并保存 TestRecord。
+- Phase 2.5：真实 stream / SSE / fetch stream 输出。
+- Phase 2.6：测试记录详情 Drawer / 对比。
+- ModelConfig 后端化作为后续增强，不排在 stream 前面。
 
 ## v0.8 登录与权限控制
 - 目标：完善后台访问控制能力。

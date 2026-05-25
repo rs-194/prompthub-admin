@@ -412,3 +412,51 @@
 验证方式：
 - 文档内容检查
 - 未执行 `npm run build`，本次未修改代码
+
+### 2026-05-25：Phase 2.3 真实 LLM 非流式调用最小闭环
+
+内容：
+- 新增 `backend/app/modules/llm_provider/`，使用 `httpx` 调 OpenAI-compatible `/chat/completions`，并处理配置缺失、超时、非 2xx 和响应结构异常
+- 新增 `backend/app/modules/chat_test/`，负责 ChatTest 请求校验、messages 拼装、temperature / maxTokens 边界保护、knowledgeContext 截断、durationMs 计算和 TestRecord 保存
+- 新增 `POST /api/v1/chat-test/run`，成功后返回 `output`、`record`、`durationMs`
+- 扩展后端配置，支持从环境变量读取 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`、`LLM_TEMPERATURE`、`LLM_MAX_TOKENS`、`LLM_TIMEOUT_SECONDS`
+- 新增 `httpx` 依赖，不使用 OpenAI SDK
+- API Key 只从后端环境变量读取，不进入前端、不进入响应、不写入日志
+- 当前不接前端，不做 StreamingResponse / SSE / fetch stream，不做真实 RAG，不做 ModelConfig 后端化
+- 同步 backend README、根 README、roadmap、模块文档索引、Phase 2.3 设计文档和 chat-test notes
+
+影响范围：
+- backend/app/core/config.py
+- backend/app/modules/llm_provider
+- backend/app/modules/chat_test
+- backend/app/api/v1/chat_test.py
+- backend/app/api/v1/router.py
+- backend/requirements.txt
+- backend/README.md
+- docs/modules/backend/v3-llm-chat-test-run.md
+- docs/modules/README.md
+- docs/development-log.md
+- docs/roadmap.md
+- README.md
+- notes/interview/chat-test-notes.md
+- notes/interview/chat-test-qa.md
+
+验证方式：
+- `cd backend && python -m compileall app`
+- 使用 FastAPI TestClient 验证 `GET /api/v1/health` 返回 200
+- 使用 FastAPI TestClient 验证缺少 LLM 环境变量时，`POST /api/v1/chat-test/run` 返回 503，错误信息为 `LLM service is not configured completely`
+- 当前未配置真实 `LLM_API_KEY`，未执行真实外部 LLM 调用验证
+
+### 2026-05-25：idea 记录补充
+
+内容：
+- 更新 `idea/2.md`，记录最近 Codex 触发频繁思考导致速率极慢的问题
+- 本次仅为记录类文档变更，不涉及代码、路由、样式或业务逻辑
+
+影响范围：
+- idea/2.md
+- docs/development-log.md
+
+验证方式：
+- 文档内容检查
+- 未执行 `npm run build`，本次未修改代码
