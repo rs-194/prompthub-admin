@@ -394,3 +394,21 @@
 - 验证 `GET /api/v1/test-records` 列表不包含完整 `output`
 - 验证 `GET /api/v1/test-records/{id}` 详情包含完整 `output`
 - 验证 `DELETE /api/v1/test-records/{id}` 删除记录，删除后详情返回 404
+
+### 2026-05-25：TestRecord 持久化设计文档补强
+
+内容：
+- 补强 Phase 2.2 TestRecord 持久化文档，说明快照存储、列表不返回完整 output、snake_case / camelCase 边界、knowledgeTitles JSON 字符串存储、分层职责、前端后续替换策略和开发期建表边界的设计原因
+- 补充 Phase 2.1 后端骨架设计原则，明确最小骨架、统一 db/session.py、api/v1 挂载入口和按模块逐步接入
+- 修正 frontend architecture 中后端 TestRecord 状态描述，明确后端已实现 TestRecord CRUD，但前端 ChatTest service 尚未替换，页面链路仍使用前端 mock records
+- 本次为 docs-only 更新，未修改代码
+
+影响范围：
+- docs/modules/backend/v2-test-records.md
+- docs/modules/backend/v1-backend-skeleton.md
+- docs/frontend-architecture.md
+- docs/development-log.md
+
+验证方式：
+- 文档内容检查
+- 未执行 `npm run build`，本次未修改代码

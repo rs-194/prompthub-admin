@@ -56,7 +56,7 @@ src/
 ## 9. `src/api` 或 `src/services` 的预期职责
 - `src/api`（计划新增）：按业务模块封装接口请求。
 - `src/services`（当前已存在）：可承载服务封装与请求调用逻辑。
-- 当前后端待接入，因此接口层仍处于预留/待完善状态。
+- 当前后端已提供 TestRecord CRUD 接口，但前端 ChatTest service 尚未替换；其他业务接口仍处于预留/待完善状态。
 - `services/auth.ts` 当前封装 mock 登录与退出登录，后续接 FastAPI 后优先替换其内部实现。
 
 ## 10. 全局样式使用边界
@@ -113,8 +113,9 @@ key: 'prompts'
 
 ## 14. 后端骨架状态
 
-- `backend/` 当前为 FastAPI Phase 2.1 最小骨架，不属于前端业务目录。
-- 后端当前只包含 app 入口、基础配置、SQLite / SQLAlchemy 连接、`/api/v1` 路由入口和 health check。
-- 前端 `src/services` 仍保持现有 mock service，当前没有迁移到后端接口。
-- 后端尚未实现 TestRecord CRUD、ChatTest stream、真实 LLM、真实 RAG、真实认证 / JWT / RBAC。
+- `backend/` 当前包含 FastAPI Phase 2.1 最小骨架与 Phase 2.2 TestRecord 持久化接口，不属于前端业务目录。
+- 后端当前包含 app 入口、基础配置、SQLite / SQLAlchemy 连接、`/api/v1` 路由入口、health check，以及 TestRecord 创建、分页列表、详情和删除接口。
+- 前端 `src/services` 仍保持现有 mock service，ChatTest 页面链路仍使用前端 mock records，尚未接入后端 TestRecord CRUD。
+- 后端已实现 TestRecord CRUD；ChatTest stream、真实 LLM、真实 RAG、真实认证 / JWT / RBAC 仍未实现。
+- 下一步是替换前端 ChatTest record service，而不是从零实现后端 TestRecord 接口。
 - 后续接入后端时，应优先替换对应模块 service 内部实现，避免直接在 View 中写接口调用。

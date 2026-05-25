@@ -34,7 +34,15 @@
 - 不实现真实登录、JWT、RBAC 或 API Key 管理
 - 不引入 Docker、Redis、Celery 或任务队列
 
-## 4. 后端目录结构
+## 4. 设计原则
+
+- Phase 2.1 只搭建最小后端骨架，先保证 FastAPI 应用可以启动和被健康检查访问。
+- 不提前创建业务模块，避免在骨架阶段扩大范围。
+- `db/session.py` 统一管理 engine、SessionLocal、Base 和 get_db，后续业务模块复用同一套数据库入口。
+- `api/v1` 作为后续业务接口挂载入口，保持版本化 API 结构清晰。
+- 后续业务按模块逐步接入，先完成最小闭环，再扩展真实业务能力。
+
+## 5. 后端目录结构
 
 ```text
 backend/
@@ -52,7 +60,7 @@ backend/
 └─ README.md
 ```
 
-## 5. 验收方式
+## 6. 验收方式
 
 ```bash
 cd backend
@@ -69,7 +77,7 @@ http://localhost:8000/api/v1/health
 
 预期返回 `status: ok`。
 
-## 6. 后续阶段入口
+## 7. 后续阶段入口
 
 - Phase 2.2：TestRecord 持久化，新增数据模型、CRUD 和对应 API。
 - Phase 2.3：后端 mock stream 接口，提供 ChatTest 流式调试基础能力。
