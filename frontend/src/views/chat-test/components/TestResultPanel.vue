@@ -16,7 +16,7 @@ defineProps<{
     <template #header>
       <div class="card-header">
         <span>输出结果</span>
-        <el-tag size="small" type="success" effect="plain">真实非流式</el-tag>
+        <el-tag size="small" type="success" effect="plain">真实流式</el-tag>
       </div>
     </template>
 
@@ -30,10 +30,10 @@ defineProps<{
 
     <div v-else-if="streaming || streamingText" class="result-content">
       <div class="streaming-title">
-        <span>{{ streaming ? '生成中' : '已停止生成' }}</span>
-        <el-tag size="small" type="warning" effect="plain">Mock streaming</el-tag>
+        <span>{{ streaming ? '流式生成中' : '已停止生成，已保留当前片段' }}</span>
+        <el-tag size="small" type="success" effect="plain">fetch stream</el-tag>
       </div>
-      <pre class="result-output streaming-output">{{ streamingText || '正在准备 mock 输出...' }}</pre>
+      <pre class="result-output streaming-output">{{ streamingText || '正在等待模型返回首段内容...' }}</pre>
     </div>
 
     <div v-else-if="loading" class="result-state">

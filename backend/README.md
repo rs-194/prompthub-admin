@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-当前后端处于 Phase 2.3：在 Phase 2.1 FastAPI 最小骨架和 Phase 2.2 TestRecord 持久化接口基础上，新增真实 LLM 非流式调用接口。
+当前后端处于 Phase 2.5：在 Phase 2.1 FastAPI 最小骨架、Phase 2.2 TestRecord 持久化接口和 Phase 2.3 真实 LLM 非流式调用接口基础上，新增真实 fetch stream + StreamingResponse + NDJSON 流式输出接口。
 
 ## 当前已完成
 
@@ -15,13 +15,14 @@
 - TestRecord 创建、分页列表、详情、删除接口
 - 列表接口只返回 `outputPreview`，详情接口返回完整 `output`
 - `POST /api/v1/chat-test/run` 真实 LLM 非流式调用接口
+- `POST /api/v1/chat-test/stream` 真实 LLM 流式输出接口
 - 使用 `httpx` 调 OpenAI-compatible `/chat/completions`
-- 成功调用后保存 TestRecord，并返回 `output`、`record`、`durationMs`
+- 非流式成功调用后保存 TestRecord，并返回 `output`、`record`、`durationMs`
+- 流式正常完成后保存 TestRecord，并通过 `done` 行返回 `record`、`durationMs`
 
 ## 当前未完成
 
-- 前端 ChatTest service 尚未替换为后端 `/api/v1/chat-test/run`
-- ChatTest stream / SSE / fetch stream
+- 原生 EventSource SSE
 - 真实 RAG / embedding / 向量数据库
 - 真实认证 / JWT / RBAC
 - Prompt / Model / Knowledge 后端表
@@ -108,7 +109,33 @@ POST /api/v1/chat-test/run
 
 - `modelName` 当前只用于 TestRecord 展示字段，真实调用使用后端 `LLM_MODEL`。
 - `knowledgeContext` 当前只是前端传入上下文，不是真实 RAG。
-- 当前不是 stream，接口会在真实模型完整返回后一次性响应。
+- 当前不是 stream，接口会在真实模型完整返回后一次性响应；该接口仍保留作为 fallback 或调试接口。
+
+## ChatTest 流式接口
+
+```text
+POST /api/v1/chat-test/stream
+```
+
+请求体与 `/api/v1/chat-test/run` 保持一致。
+
+响应格式为 `application/x-ndjson`，不是原生 EventSource SSE：
+
+```json
+{"type":"chunk","content":"文本片段"}
+{"type":"done","record":{},"durationMs":1234}
+{"type":"error","message":"LLM 调用失败"}
+```
+
+说明：
+
+- 后端通过 OpenAI-compatible `/chat/completions` 发起 `stream: true` 调用。
+- 后端解析上游 `data: {...}` 和 `data: [DONE]`。
+- 前端通过 fetch stream 读取 NDJSON。
+- 正常完成后由后端保存 `success` TestRecord。
+- 用户主动停止时，Phase 2.5 v1 不保存 `stopped` TestRecord。
+- API Key 只在后端读取，不进入前端、不进入响应、不写入日志。
+- 当前不是真实 RAG，`knowledgeContext` 仍是前端传入的 mock context。
 
 ## TestRecord 接口
 
@@ -126,4 +153,4 @@ DELETE /api/v1/test-records/{id}
 - `keyword` 为空或全空白时不筛选。
 - `POST /api/v1/test-records` 由后端生成 `outputPreview` 和 `createdAt`。
 - `knowledgeTitles` 当前以 JSON 字符串存储，对外仍返回数组。
-- `status: stopped` 只是记录状态预留，不代表已经接入真实取消能力。
+- `status: stopped` 仍是记录状态预留；Phase 2.5 已支持前端停止生成，但用户主动停止时 v1 不保存 stopped 记录。

@@ -12,12 +12,15 @@ import type {
   ChatTestRecordStatus,
   ChatTestRunRequest,
   ChatTestRunResponse,
+  ChatTestStreamCallbacks,
+  ChatTestStreamEvent,
   ChatTestResult,
   TestRecordDetail,
 } from '@/types/chatTest';
 
 const chatTestRecords: ChatTestRecord[] = [];
 const CHAT_TEST_RUN_API_PATH = '/api/v1/chat-test/run';
+const CHAT_TEST_STREAM_API_PATH = '/api/v1/chat-test/stream';
 
 export class ChatTestApiError extends Error {
   readonly status: number;
@@ -117,6 +120,26 @@ function isChatTestRunResponse(value: unknown): value is ChatTestRunResponse {
     isTestRecordDetail(value.record) &&
     typeof value.durationMs === 'number'
   );
+}
+
+function isChatTestStreamEvent(value: unknown): value is ChatTestStreamEvent {
+  if (!isObject(value) || typeof value.type !== 'string') {
+    return false;
+  }
+
+  if (value.type === 'chunk') {
+    return typeof value.content === 'string';
+  }
+
+  if (value.type === 'done') {
+    return isTestRecordDetail(value.record) && typeof value.durationMs === 'number';
+  }
+
+  if (value.type === 'error') {
+    return typeof value.message === 'string';
+  }
+
+  return false;
 }
 
 function getRunApiErrorMessage(status: number) {
@@ -245,6 +268,138 @@ export async function runPromptTestApi(
   }
 
   return responseData;
+}
+
+function dispatchStreamEvent(
+  event: ChatTestStreamEvent,
+  callbacks: ChatTestStreamCallbacks,
+) {
+  if (event.type === 'chunk') {
+    callbacks.onChunk(event.content);
+    return;
+  }
+
+  if (event.type === 'done') {
+    callbacks.onDone(event.record, event.durationMs);
+    return;
+  }
+
+  callbacks.onError(event.message);
+}
+
+function parseStreamLine(line: string): ChatTestStreamEvent | null {
+  const normalizedLine = line.trim();
+  if (!normalizedLine) {
+    return null;
+  }
+
+  const parsed = JSON.parse(normalizedLine) as unknown;
+  if (!isChatTestStreamEvent(parsed)) {
+    throw new ChatTestApiError('流式响应格式异常，请稍后重试', 200);
+  }
+
+  return parsed;
+}
+
+function processStreamBuffer(
+  buffer: string,
+  callbacks: ChatTestStreamCallbacks,
+) {
+  const lines = buffer.split('\n');
+  const remainingBuffer = lines.pop() ?? '';
+
+  for (const line of lines) {
+    const event = parseStreamLine(line);
+    if (event) {
+      dispatchStreamEvent(event, callbacks);
+    }
+  }
+
+  return remainingBuffer;
+}
+
+/**
+ * 调用后端真实 LLM 流式接口。
+ *
+ * Phase 2.5 使用 fetch stream + FastAPI StreamingResponse + NDJSON，
+ * 不是原生 EventSource SSE。函数按行解析后端返回的 NDJSON，逐段分发 chunk，
+ * 正常完成时接收后端保存后的 TestRecord；AbortSignal 用于停止生成和组件卸载清理。
+ *
+ * @param payload 本次 ChatTest 运行请求体
+ * @param callbacks 流式事件回调
+ * @param abortSignal 当前请求的取消信号
+ * @returns 流式读取完成后的空结果
+ */
+export async function runPromptTestStreamApi(
+  payload: ChatTestRunRequest,
+  callbacks: ChatTestStreamCallbacks,
+  abortSignal: AbortSignal,
+): Promise<void> {
+  let response: Response;
+
+  try {
+    response = await fetch(CHAT_TEST_STREAM_API_PATH, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: abortSignal,
+    });
+  } catch (error) {
+    if (abortSignal.aborted) {
+      throw error;
+    }
+
+    throw new ChatTestApiError('网络异常，无法连接后端 ChatTest 流式服务', 0);
+  }
+
+  if (!response.ok) {
+    throw new ChatTestApiError(getRunApiErrorMessage(response.status), response.status);
+  }
+
+  if (!response.body) {
+    throw new ChatTestApiError('当前响应不支持流式读取，请稍后重试', response.status);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      buffer = processStreamBuffer(buffer, callbacks);
+    }
+
+    buffer += decoder.decode();
+    const lastEvent = parseStreamLine(buffer);
+    if (lastEvent) {
+      dispatchStreamEvent(lastEvent, callbacks);
+    }
+  } catch (error) {
+    if (abortSignal.aborted) {
+      throw error;
+    }
+
+    if (error instanceof ChatTestApiError) {
+      throw error;
+    }
+
+    if (error instanceof SyntaxError) {
+      throw new ChatTestApiError('流式响应 JSON 解析失败，请稍后重试', response.status);
+    }
+
+    throw new ChatTestApiError('流式读取失败，请检查网络或稍后重试', response.status);
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 /**

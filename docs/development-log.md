@@ -487,3 +487,35 @@
 - `cd frontend && npm run build`
 - 人工验证路径：启动后端并配置 LLM 环境变量后访问 `/chat-test`，输入测试内容并点击运行，确认页面展示真实 output，最近测试记录出现后端返回的新 record
 - 异常验证路径：后端未配置 `LLM_API_KEY` 时，确认前端出现清晰错误提示
+
+### 2026-05-30：Phase 2.5 ChatTest 真实流式输出
+
+内容：
+- 新增 `POST /api/v1/chat-test/stream`，后端使用 FastAPI `StreamingResponse` 返回 `application/x-ndjson`
+- 扩展 `llm_provider`，支持 OpenAI-compatible `stream: true` 调用，解析上游 `data: {...}` 和 `data: [DONE]`
+- 扩展 ChatTest 后端 service，流式过程中累积完整 output，正常完成后保存 `success` TestRecord，并通过 `done` 行返回 record 和 durationMs
+- 扩展前端 ChatTest service，新增 `runPromptTestStreamApi()`，通过 fetch + ReadableStream + TextDecoder 按行解析 NDJSON
+- 完善 ChatTest 页面，默认使用真实 fetch stream，支持逐段展示 output、AbortController 停止生成和组件卸载清理
+- 更新结果面板文案，明确当前为真实流式输出，不再展示 mock streaming
+- 新增 Phase 2.5 模块文档，并同步 README、backend README、roadmap、模块索引和 chat-test interview notes
+- 当前不是原生 EventSource SSE，不做真实 RAG，不做 ModelConfig / Prompt / Knowledge 后端化；用户主动停止时 v1 不保存 stopped 记录
+
+影响范围：
+- backend/app/modules/llm_provider/service.py
+- backend/app/modules/chat_test
+- backend/app/api/v1/chat_test.py
+- frontend/src/services/chatTest.ts
+- frontend/src/types/chatTest.ts
+- frontend/src/views/chat-test
+- docs/modules/chat-test/phase-2-5-stream.md
+- docs/modules/README.md
+- docs/roadmap.md
+- README.md
+- backend/README.md
+- notes/interview/chat-test-notes.md
+- notes/interview/chat-test-qa.md
+
+验证方式：
+- `cd backend && python -m compileall app` 通过
+- `cd frontend && npm run build` 通过
+- 当前未配置真实 `LLM_API_KEY`，未验证真实外部 LLM 流式 output

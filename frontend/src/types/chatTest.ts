@@ -110,6 +110,33 @@ export interface ChatTestRunResponse {
   durationMs: number;
 }
 
+export interface ChatTestStreamChunkEvent {
+  type: 'chunk';
+  content: string;
+}
+
+export interface ChatTestStreamDoneEvent {
+  type: 'done';
+  record: TestRecordDetail;
+  durationMs: number;
+}
+
+export interface ChatTestStreamErrorEvent {
+  type: 'error';
+  message: string;
+}
+
+export type ChatTestStreamEvent =
+  | ChatTestStreamChunkEvent
+  | ChatTestStreamDoneEvent
+  | ChatTestStreamErrorEvent;
+
+export interface ChatTestStreamCallbacks {
+  onChunk: (content: string) => void;
+  onDone: (record: TestRecordDetail, durationMs: number) => void;
+  onError: (message: string) => void;
+}
+
 export interface ChatTestRecord {
   id: number;
   promptTitle: string;

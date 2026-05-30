@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import KnowledgeContextPanel from './components/KnowledgeContextPanel.vue';
 import TestParameterPanel from './components/TestParameterPanel.vue';
 import TestRecordTable from './components/TestRecordTable.vue';
@@ -12,7 +12,7 @@ import {
   getChatTestPromptOptions,
   getChatTestRecords,
   mapTestRecordDetailToRecord,
-  runPromptTestApi,
+  runPromptTestStreamApi,
 } from '@/services/chatTest';
 import type {
   ChatTestKnowledgeOption,
@@ -34,13 +34,16 @@ const userInput = ref('');
 const testResult = ref<ChatTestResult | null>(null);
 const testRecords = ref<ChatTestRecord[]>([]);
 const loading = ref(false);
+const streaming = ref(false);
+const streamingText = ref('');
+const abortController = ref<AbortController | null>(null);
 const errorMessage = ref('');
 const testParams = ref<ChatTestParams>({
   temperature: 0.7,
   maxTokens: 800,
   outputFormat: 'markdown',
 });
-const nonStreamingStopTip = '当前为非流式调用，暂不支持停止生成';
+const streamingStopTip = '流式生成中可停止；停止后保留已生成片段，本阶段不保存 stopped 记录';
 
 const selectedPrompt = computed(() =>
   promptOptions.value.find((prompt) => prompt.id === selectedPromptId.value),
@@ -69,7 +72,8 @@ const canRunTest = computed(
     Boolean(selectedPrompt.value) &&
     Boolean(selectedModel.value) &&
     userInput.value.trim().length > 0 &&
-    !loading.value,
+    !loading.value &&
+    !streaming.value,
 );
 
 /**
@@ -172,19 +176,34 @@ function buildResultFromResponse(
 
 function clearResultState() {
   testResult.value = null;
+  streamingText.value = '';
+}
+
+function abortActiveStream() {
+  if (abortController.value) {
+    abortController.value.abort();
+    abortController.value = null;
+  }
+  streaming.value = false;
+}
+
+function isAbortError(error: unknown) {
+  return (
+    error instanceof DOMException && error.name === 'AbortError'
+  );
 }
 
 /**
- * 运行一次真实 LLM 非流式 Prompt 测试。
+ * 运行一次真实 LLM 流式 Prompt 测试。
  *
  * 用户点击“运行测试”时调用，负责校验 prompt / model / userInput，组装当前前端配置源里的
- * prompt、modelName、手动选择的知识库 mock context 和测试参数，再调用后端 `/api/v1/chat-test/run`。
- * 当前不是 stream / SSE，不做逐字输出；成功后直接展示完整 output，并把后端返回的 record 插入最近记录。
+ * prompt、modelName、手动选择的知识库 mock context 和测试参数，再调用后端 `/api/v1/chat-test/stream`。
+ * Phase 2.5 使用 fetch stream + NDJSON，不是原生 EventSource SSE；成功完成后由后端保存 TestRecord。
  *
  * @returns 调用完成后的空结果
  */
 async function handleRunTest() {
-  if (loading.value) {
+  if (loading.value || streaming.value) {
     return;
   }
 
@@ -202,27 +221,76 @@ async function handleRunTest() {
     return;
   }
 
-  loading.value = true;
+  const controller = new AbortController();
+  let currentOutput = '';
+
+  abortController.value = controller;
+  streaming.value = true;
+  loading.value = false;
   errorMessage.value = '';
 
   try {
-    const response = await runPromptTestApi(requestPayload);
-    testResult.value = buildResultFromResponse(
-      response.output,
+    await runPromptTestStreamApi(
       requestPayload,
-      contextPreview,
-      response.durationMs,
-      response.record.createdAt,
+      {
+        onChunk(content) {
+          if (controller.signal.aborted) {
+            return;
+          }
+
+          currentOutput += content;
+          streamingText.value = currentOutput;
+        },
+        onDone(record, durationMs) {
+          if (controller.signal.aborted) {
+            return;
+          }
+
+          testResult.value = buildResultFromResponse(
+            currentOutput,
+            requestPayload,
+            contextPreview,
+            durationMs,
+            record.createdAt,
+          );
+          testRecords.value = [
+            mapTestRecordDetailToRecord(record),
+            ...testRecords.value.filter((item) => item.id !== record.id),
+          ];
+          streamingText.value = '';
+          streaming.value = false;
+        },
+        onError(message) {
+          if (controller.signal.aborted) {
+            return;
+          }
+
+          errorMessage.value = message;
+          streaming.value = false;
+        },
+      },
+      controller.signal,
     );
-    testRecords.value = [
-      mapTestRecordDetailToRecord(response.record),
-      ...testRecords.value.filter((record) => record.id !== response.record.id),
-    ];
   } catch (error) {
-    errorMessage.value = getChatTestApiErrorMessage(error);
+    if (!isAbortError(error)) {
+      errorMessage.value = getChatTestApiErrorMessage(error);
+    }
   } finally {
     loading.value = false;
+    streaming.value = false;
+    if (abortController.value === controller) {
+      abortController.value = null;
+    }
   }
+}
+
+function handleStopGenerating() {
+  if (!streaming.value) {
+    return;
+  }
+
+  abortActiveStream();
+  errorMessage.value = '';
 }
 
 /**
@@ -234,6 +302,7 @@ async function handleRunTest() {
  * @returns 清空完成后的空结果
  */
 function handleClearInput() {
+  abortActiveStream();
   userInput.value = '';
   clearResultState();
   errorMessage.value = '';
@@ -249,6 +318,7 @@ function handleClearInput() {
  * @returns 清空完成后的空结果
  */
 function handleClearResult() {
+  abortActiveStream();
   clearResultState();
   errorMessage.value = '';
   loading.value = false;
@@ -256,6 +326,10 @@ function handleClearResult() {
 
 onMounted(() => {
   void loadInitialData();
+});
+
+onBeforeUnmount(() => {
+  abortActiveStream();
 });
 </script>
 
@@ -265,10 +339,10 @@ onMounted(() => {
       <div>
         <h1>对话测试 / Prompt 调试台</h1>
         <p>
-          用于验证提示词模板、模型配置、知识库 mock context 与测试参数的组合效果。当前已接入后端真实 LLM 非流式 run 接口，不做真实 SSE，不做真实 RAG。
+          用于验证提示词模板、模型配置、知识库 mock context 与测试参数的组合效果。当前已接入后端真实 fetch stream 流式输出，不是原生 EventSource SSE，不做真实 RAG。
         </p>
       </div>
-      <el-tag type="success" effect="plain">真实非流式</el-tag>
+      <el-tag type="success" effect="plain">真实流式</el-tag>
     </div>
 
     <div class="workspace-grid">
@@ -357,24 +431,30 @@ onMounted(() => {
             <div class="actions">
               <el-button
                 type="primary"
-                :loading="loading"
+                :loading="streaming"
                 :disabled="!canRunTest"
                 @click="handleRunTest"
               >
                 运行测试
               </el-button>
-              <el-button type="warning" plain disabled :title="nonStreamingStopTip">
+              <el-button
+                type="warning"
+                plain
+                :disabled="!streaming"
+                :title="streamingStopTip"
+                @click="handleStopGenerating"
+              >
                 停止生成
               </el-button>
               <el-button :disabled="loading" @click="handleClearInput">清空</el-button>
               <el-button
-                :disabled="loading || !testResult"
+                :disabled="loading || (!testResult && !streamingText)"
                 @click="handleClearResult"
               >
                 清空结果
               </el-button>
             </div>
-            <div class="form-tip">{{ nonStreamingStopTip }}</div>
+            <div class="form-tip">{{ streamingStopTip }}</div>
           </el-form>
         </el-card>
 
@@ -401,8 +481,8 @@ onMounted(() => {
       <TestResultPanel
         :result="testResult"
         :loading="loading"
-        :streaming="false"
-        streaming-text=""
+        :streaming="streaming"
+        :streaming-text="streamingText"
         :error-message="errorMessage"
       />
     </div>
