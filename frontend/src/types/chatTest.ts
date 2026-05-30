@@ -37,6 +37,20 @@ export interface ChatTestParams {
   outputFormat: ChatTestOutputFormat;
 }
 
+export interface KnowledgeContextPayload {
+  titles: string[];
+  content: string;
+}
+
+export interface ChatTestRunRequest {
+  promptTitle: string;
+  systemPrompt: string;
+  userInput: string;
+  modelName: string;
+  knowledgeContext: KnowledgeContextPayload;
+  params: ChatTestParams;
+}
+
 export interface ChatTestFormData {
   promptId: number;
   modelId: number;
@@ -71,7 +85,30 @@ export interface ChatTestRecordInput {
   params: ChatTestParams;
 }
 
-export type ChatTestRecordStatus = 'success' | 'failed';
+export type ChatTestRecordStatus = 'success' | 'failed' | 'stopped';
+
+export interface TestRecordDetail {
+  id: number;
+  promptTitle: string;
+  modelName: string;
+  userInput: string;
+  outputPreview: string;
+  output: string;
+  knowledgeTitles: string[];
+  knowledgeCount: number;
+  temperature: number;
+  maxTokens: number;
+  outputFormat: ChatTestOutputFormat;
+  durationMs: number;
+  status: ChatTestRecordStatus;
+  createdAt: string;
+}
+
+export interface ChatTestRunResponse {
+  output: string;
+  record: TestRecordDetail;
+  durationMs: number;
+}
 
 export interface ChatTestRecord {
   id: number;

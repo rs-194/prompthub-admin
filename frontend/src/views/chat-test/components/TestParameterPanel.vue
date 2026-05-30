@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ChatTestOutputFormat, ChatTestParams } from '@/types/chatTest';
 
-// 展示 Prompt 调试台 mock 测试参数，本组件只负责表单 UI 和 v-model 通信，不调用 service、不维护结果状态。
+// 展示 Prompt 调试台测试参数，本组件只负责表单 UI 和 v-model 通信，不调用 service、不维护结果状态。
 const props = defineProps<{
   modelValue: ChatTestParams;
 }>();
@@ -41,13 +41,13 @@ function handleOutputFormatChange(value: ChatTestOutputFormat) {
     <template #header>
       <div class="card-header">
         <span>测试参数</span>
-        <el-tag size="small" type="warning" effect="plain">Mock 参数</el-tag>
+        <el-tag size="small" type="success" effect="plain">随请求发送</el-tag>
       </div>
     </template>
 
     <el-alert
-      title="参数仅用于前端 mock 展示和记录摘要，不代表真实采样、真实 token 限制或模型格式约束。"
-      type="warning"
+      title="参数会随 run 请求发送到后端；真实模型和 API Key 仍由后端环境变量控制。"
+      type="info"
       show-icon
       :closable="false"
       class="parameter-alert"

@@ -16,7 +16,7 @@ defineProps<{
     <template #header>
       <div class="card-header">
         <span>输出结果</span>
-        <el-tag size="small" type="info">Mock</el-tag>
+        <el-tag size="small" type="success" effect="plain">真实非流式</el-tag>
       </div>
     </template>
 
@@ -56,7 +56,7 @@ defineProps<{
 
       <div v-if="result.usedKnowledgeTitles.length > 0" class="knowledge-summary">
         <div class="knowledge-title">
-          <span>知识库 mock context</span>
+          <span>知识库 context</span>
           <el-tag size="small" type="warning" effect="plain">非真实检索结果</el-tag>
         </div>
         <div class="knowledge-tags">

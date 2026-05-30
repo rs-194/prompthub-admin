@@ -9,10 +9,25 @@ import type {
   ChatTestPromptOption,
   ChatTestRecord,
   ChatTestRecordInput,
+  ChatTestRecordStatus,
+  ChatTestRunRequest,
+  ChatTestRunResponse,
   ChatTestResult,
+  TestRecordDetail,
 } from '@/types/chatTest';
 
 const chatTestRecords: ChatTestRecord[] = [];
+const CHAT_TEST_RUN_API_PATH = '/api/v1/chat-test/run';
+
+export class ChatTestApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ChatTestApiError';
+    this.status = status;
+  }
+}
 
 function getCurrentTimeText() {
   const formatter = new Intl.DateTimeFormat('zh-CN', {
@@ -50,6 +65,100 @@ function cloneRecord(record: ChatTestRecord): ChatTestRecord {
     ...record,
     knowledgeTitles: [...record.knowledgeTitles],
     params: { ...record.params },
+  };
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isOutputFormat(value: unknown): value is ChatTestParams['outputFormat'] {
+  return value === 'text' || value === 'markdown' || value === 'json';
+}
+
+function isRecordStatus(value: unknown): value is ChatTestRecordStatus {
+  return value === 'success' || value === 'failed' || value === 'stopped';
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function isTestRecordDetail(value: unknown): value is TestRecordDetail {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === 'number' &&
+    typeof value.promptTitle === 'string' &&
+    typeof value.modelName === 'string' &&
+    typeof value.userInput === 'string' &&
+    typeof value.outputPreview === 'string' &&
+    typeof value.output === 'string' &&
+    isStringArray(value.knowledgeTitles) &&
+    typeof value.knowledgeCount === 'number' &&
+    typeof value.temperature === 'number' &&
+    typeof value.maxTokens === 'number' &&
+    isOutputFormat(value.outputFormat) &&
+    typeof value.durationMs === 'number' &&
+    isRecordStatus(value.status) &&
+    typeof value.createdAt === 'string'
+  );
+}
+
+function isChatTestRunResponse(value: unknown): value is ChatTestRunResponse {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.output === 'string' &&
+    isTestRecordDetail(value.record) &&
+    typeof value.durationMs === 'number'
+  );
+}
+
+function getRunApiErrorMessage(status: number) {
+  const statusMessageMap: Record<number, string> = {
+    422: '输入参数不完整或格式不正确，请检查测试内容后重试',
+    502: '模型服务暂时不可用，请稍后重试',
+    503: '后端 LLM 环境变量未配置完整，请先配置后端服务',
+    504: '模型调用超时，请稍后重试或缩短输入内容',
+  };
+
+  return statusMessageMap[status] ?? '运行测试失败，请稍后重试';
+}
+
+export function getChatTestApiErrorMessage(error: unknown) {
+  if (error instanceof ChatTestApiError) {
+    return error.message;
+  }
+
+  return '运行测试失败，请检查网络或稍后重试';
+}
+
+export function mapTestRecordDetailToRecord(record: TestRecordDetail): ChatTestRecord {
+  const params: ChatTestParams = {
+    temperature: record.temperature,
+    maxTokens: record.maxTokens,
+    outputFormat: record.outputFormat,
+  };
+
+  return {
+    id: record.id,
+    promptTitle: record.promptTitle,
+    modelName: record.modelName,
+    userInput: record.userInput,
+    outputPreview: record.outputPreview,
+    durationMs: record.durationMs,
+    createdAt: record.createdAt,
+    status: record.status,
+    knowledgeTitles: [...record.knowledgeTitles],
+    knowledgeCount: record.knowledgeCount,
+    contextPreview: '',
+    params,
+    paramsSummary: buildParamsSummary(params),
   };
 }
 
@@ -96,6 +205,46 @@ function getOutputFormatLabel(outputFormat: ChatTestParams['outputFormat']) {
  */
 export function buildParamsSummary(params: ChatTestParams): string {
   return `T=${params.temperature.toFixed(1)} / ${params.maxTokens} tokens / ${getOutputFormatLabel(params.outputFormat)}`;
+}
+
+/**
+ * 调用后端真实 LLM 非流式 run 接口。
+ *
+ * 本函数是 Phase 2.4 的真实运行入口，只负责请求 `/api/v1/chat-test/run` 并校验返回结构；
+ * Prompt / Model / Knowledge 仍来自前端现有配置源，API Key 和真实模型地址只存在于后端。
+ * 当前不是 stream / SSE，不做逐字输出，也不支持前端停止已发出的非流式请求。
+ *
+ * @param payload 本次 ChatTest 运行请求体
+ * @returns 后端返回的完整 output、TestRecord detail 和耗时
+ */
+export async function runPromptTestApi(
+  payload: ChatTestRunRequest,
+): Promise<ChatTestRunResponse> {
+  let response: Response;
+
+  try {
+    response = await fetch(CHAT_TEST_RUN_API_PATH, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new ChatTestApiError('网络异常，无法连接后端 ChatTest 服务', 0);
+  }
+
+  const responseData = (await response.json().catch(() => null)) as unknown;
+
+  if (!response.ok) {
+    throw new ChatTestApiError(getRunApiErrorMessage(response.status), response.status);
+  }
+
+  if (!isChatTestRunResponse(responseData)) {
+    throw new ChatTestApiError('后端返回结构异常，请稍后重试', response.status);
+  }
+
+  return responseData;
 }
 
 /**

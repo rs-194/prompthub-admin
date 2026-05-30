@@ -460,3 +460,30 @@
 验证方式：
 - 文档内容检查
 - 未执行 `npm run build`，本次未修改代码
+
+### 2026-05-30：Phase 2.4 ChatTest 前端接入真实 run 接口
+
+内容：
+- 扩展 `frontend/src/types/chatTest.ts`，补充 `ChatTestRunRequest`、`KnowledgeContextPayload`、`ChatTestRunResponse` 和 `TestRecordDetail` 类型
+- 扩展 `frontend/src/services/chatTest.ts`，新增 `runPromptTestApi()`，通过相对路径 `POST /api/v1/chat-test/run` 调用后端真实 LLM 非流式接口，并统一处理响应结构和错误提示
+- 完善 `frontend/src/views/chat-test/ChatTestView.vue`，点击运行测试时组装 prompt、modelName、knowledgeContext 和 params，展示后端真实 output，并使用后端返回的 record 更新最近测试记录
+- 调整 ChatTest 结果区、参数区和记录表展示，明确当前为真实非流式调用，非流式阶段暂不支持停止生成
+- 新增 Phase 2.4 模块文档，并同步 README、roadmap、模块索引和 chat-test interview notes
+- 当前仍不做 stream / SSE / fetch stream，不做真实 RAG，不做 Prompt / Model / Knowledge 后端化，不在前端保存或展示 API Key
+
+影响范围：
+- frontend/src/views/chat-test
+- frontend/src/services/chatTest.ts
+- frontend/src/types/chatTest.ts
+- docs/modules/chat-test/phase-2-4-real-run-api.md
+- docs/modules/README.md
+- docs/development-log.md
+- docs/roadmap.md
+- README.md
+- notes/interview/chat-test-notes.md
+- notes/interview/chat-test-qa.md
+
+验证方式：
+- `cd frontend && npm run build`
+- 人工验证路径：启动后端并配置 LLM 环境变量后访问 `/chat-test`，输入测试内容并点击运行，确认页面展示真实 output，最近测试记录出现后端返回的新 record
+- 异常验证路径：后端未配置 `LLM_API_KEY` 时，确认前端出现清晰错误提示
