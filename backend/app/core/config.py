@@ -1,5 +1,12 @@
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+
+_BACKEND_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(_BACKEND_ENV_PATH)
 
 
 @dataclass(frozen=True)

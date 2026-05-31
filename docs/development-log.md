@@ -538,3 +538,27 @@
 验证方式：
 - `cd frontend && npm run build`
 - 本地联调时先启动后端 `cd backend && python -m uvicorn app.main:app --reload`，再启动前端 `cd frontend && npm run dev`，访问 `/chat-test` 验证 `/api/v1/...` 请求由 Vite proxy 转发
+
+### 2026-05-31：Phase 2.5.2 后端 .env 加载与本地生成物忽略整理
+
+内容：
+- 在 `backend/app/core/config.py` 中通过 `python-dotenv` 启动时加载 `backend/.env`，继续保留 `os.getenv` 读取 LLM 配置
+- 新增 `backend/.env.example`，提供 LLM 本地环境变量示例，不包含真实 API Key
+- 更新 `backend/requirements.txt`，新增 `python-dotenv`
+- 整理 `.gitignore`，明确忽略 Python 缓存、`backend/prompthub.db`、真实 `.env`、`backend/.env`、IDE 配置
+- 更新 README 与 backend README，说明真实 API Key 写入 `backend/.env`，`backend/.env` 不提交，`.env.example` 可提交，修改 `.env` 后需要重启 uvicorn
+- 本次不修改前端业务代码，不修改 ChatTest 业务逻辑，不写入真实 API Key
+
+影响范围：
+- backend/app/core/config.py
+- backend/requirements.txt
+- backend/.env.example
+- .gitignore
+- README.md
+- backend/README.md
+- docs/development-log.md
+
+验证方式：
+- `cd backend && python -m compileall app`
+- `cd backend && python -c "from app.core.config import settings; print(bool(settings.llm_api_key))"`
+- 不要求真实调用外部 LLM

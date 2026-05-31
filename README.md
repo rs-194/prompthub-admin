@@ -64,6 +64,7 @@ npm run build
 ```bash
 cd backend
 python -m pip install -r requirements.txt
+copy .env.example .env
 python -m uvicorn app.main:app --reload
 ```
 
@@ -100,7 +101,7 @@ LLM_MAX_TOKENS
 LLM_TIMEOUT_SECONDS
 ```
 
-说明：`LLM_API_KEY` 只允许配置在后端环境变量中，不要提交真实 API Key。前端普通 JSON API 通过 `frontend/src/services/request.ts` 统一封装；`/chat-test/stream` 继续使用 fetch stream + FastAPI StreamingResponse + NDJSON，不是原生 EventSource SSE，也不改为普通请求封装；当前不是真实 RAG；`modelName` 当前只用于测试记录展示字段，真实调用使用后端 `LLM_MODEL`。
+说明：本地开发时可复制 `backend/.env.example` 为 `backend/.env`，再把真实 `LLM_API_KEY` 写入 `backend/.env`；后端启动时会自动读取 `backend/.env`，不是项目根目录 `.env`。`backend/.env` 和真实 API Key 不提交，`backend/.env.example` 可以提交；修改 `.env` 后需要重启 uvicorn。前端普通 JSON API 通过 `frontend/src/services/request.ts` 统一封装；`/chat-test/stream` 继续使用 fetch stream + FastAPI StreamingResponse + NDJSON，不是原生 EventSource SSE，也不改为普通请求封装；当前不是真实 RAG；`modelName` 当前只用于测试记录展示字段，真实调用使用后端 `LLM_MODEL`。
 
 ## 目录结构说明
 ```text
@@ -112,6 +113,7 @@ prompthub-admin/
 │  │  ├─ db/                     # SQLite / SQLAlchemy 基础连接
 │  │  ├─ modules/                # 后端业务模块（当前包含 test_records、llm_provider、chat_test）
 │  │  └─ main.py                 # FastAPI app 入口
+│  ├─ .env.example               # 后端 LLM 环境变量示例，可提交；真实 backend/.env 不提交
 │  ├─ requirements.txt
 │  └─ README.md
 ├─ frontend/                     # 前端工程

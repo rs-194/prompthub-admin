@@ -34,6 +34,7 @@
 ```bash
 cd backend
 python -m pip install -r requirements.txt
+copy .env.example .env
 python -m uvicorn app.main:app --reload
 ```
 
@@ -48,9 +49,9 @@ sqlite:///./prompthub.db
 ## LLM 环境变量
 
 ```text
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_API_KEY=真实 key，仅后端环境变量
-LLM_MODEL=gpt-4o-mini
+LLM_BASE_URL=https://api.example.com/v1
+LLM_API_KEY=replace-with-your-api-key
+LLM_MODEL=example-model
 LLM_TEMPERATURE=0.7
 LLM_MAX_TOKENS=1024
 LLM_TIMEOUT_SECONDS=60
@@ -59,8 +60,11 @@ LLM_TIMEOUT_SECONDS=60
 说明：
 
 - API Key 只在后端读取，不进入前端、不进入响应、不写入日志。
-- 不要提交真实 API Key。
-- 当前使用 `os.getenv` 读取环境变量，不依赖 `.env` 自动加载。
+- 本地开发时可复制 `backend/.env.example` 为 `backend/.env`，再把真实 API Key 写入 `backend/.env`。
+- 后端启动时会自动读取 `backend/.env`，不是项目根目录 `.env`。
+- 不要提交真实 API Key，也不要提交 `backend/.env`；`backend/.env.example` 可以提交。
+- 修改 `.env` 后需要重启 uvicorn。
+- 配置代码仍使用 `os.getenv` 读取环境变量，只是在读取前通过 `python-dotenv` 加载 `backend/.env`。
 
 ## 健康检查
 
