@@ -50,6 +50,8 @@ npm install
 ```bash
 npm run dev
 ```
+开发环境已配置 Vite proxy：前端请求 `/api/...` 会转发到 `http://127.0.0.1:8000`。如需绕过 dev proxy 直连其他后端地址，可在前端环境变量中配置 `VITE_API_BASE_URL`，但不要在前端配置 `LLM_API_KEY` 或真实模型服务 baseURL。
+
 3. 构建检查
 ```bash
 npm run build
@@ -98,7 +100,7 @@ LLM_MAX_TOKENS
 LLM_TIMEOUT_SECONDS
 ```
 
-说明：`LLM_API_KEY` 只允许配置在后端环境变量中，不要提交真实 API Key。`/chat-test/stream` 使用 fetch stream + FastAPI StreamingResponse + NDJSON，不是原生 EventSource SSE；当前不是真实 RAG；`modelName` 当前只用于测试记录展示字段，真实调用使用后端 `LLM_MODEL`。
+说明：`LLM_API_KEY` 只允许配置在后端环境变量中，不要提交真实 API Key。前端普通 JSON API 通过 `frontend/src/services/request.ts` 统一封装；`/chat-test/stream` 继续使用 fetch stream + FastAPI StreamingResponse + NDJSON，不是原生 EventSource SSE，也不改为普通请求封装；当前不是真实 RAG；`modelName` 当前只用于测试记录展示字段，真实调用使用后端 `LLM_MODEL`。
 
 ## 目录结构说明
 ```text

@@ -72,10 +72,14 @@ fetch stream + FastAPI StreamingResponse + NDJSON
   - 新增流式事件和 callbacks 类型。
 - `frontend/src/services/chatTest.ts`
   - 新增 `runPromptTestStreamApi(payload, callbacks, abortSignal)`。
-  - 使用 `fetch` 调用 `/api/v1/chat-test/stream`。
+  - 使用 `fetch` 调用 `/api/v1/chat-test/stream`，并通过统一 URL 拼接支持开发代理或 `VITE_API_BASE_URL`。
   - 使用 `response.body.getReader()` 读取流。
   - 使用 `TextDecoder` 增量解码。
   - 使用 buffer 缓存半行，按 `\n` 解析 NDJSON。
+- `frontend/src/services/request.ts`
+  - 封装普通 JSON API 请求、baseURL 拼接和基础错误对象。
+  - 默认 baseURL 为空，开发环境依赖 Vite proxy 将 `/api` 转发到 `http://127.0.0.1:8000`。
+  - 可通过 `VITE_API_BASE_URL` 配置前端 API baseURL，但不存放 `LLM_API_KEY` 或真实模型服务 baseURL。
 - `frontend/src/views/chat-test/ChatTestView.vue`
   - 默认运行路径切到真实 stream 接口。
   - 维护 `streaming`、`streamingText`、`abortController`。
@@ -105,6 +109,7 @@ fetch stream + FastAPI StreamingResponse + NDJSON
 - ModelConfig 未控制真实模型调用，真实模型仍由后端 `LLM_MODEL` 决定。
 - API Key 只存在后端环境变量，不进入前端。
 - 非流式 `/api/v1/chat-test/run` 仍保留，可作为 fallback 或调试接口。
+- 普通 JSON API 可以使用统一 request 封装；stream 接口仍保留 `fetch` + `ReadableStream`，因为浏览器端 axios 不适合作为本阶段的流式消费主路径。
 
 ## 8. 验证方式
 
@@ -121,6 +126,20 @@ python -m compileall app
 cd frontend
 npm run build
 ```
+
+本地联调：
+
+```bash
+cd backend
+python -m uvicorn app.main:app --reload
+```
+
+```bash
+cd frontend
+npm run dev
+```
+
+开发期前端访问 `/api/v1/...` 时由 Vite proxy 转发到 `http://127.0.0.1:8000`。
 
 人工验证：
 

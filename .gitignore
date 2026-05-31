@@ -4,3 +4,22 @@ dist/
 data/
 logs/
 notes/interview/
+
+/idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local SQLite database
+backend/prompthub.db
+
+# Local env
+.env
+backend/.env
+
+# IDE
+.idea/
+.vscode/

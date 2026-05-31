@@ -519,3 +519,22 @@
 - `cd backend && python -m compileall app` 通过
 - `cd frontend && npm run build` 通过
 - 当前未配置真实 `LLM_API_KEY`，未验证真实外部 LLM 流式 output
+
+### 2026-05-31：Phase 2.5.1 前端 API baseURL 与请求封装修复
+
+内容：
+- 为 `frontend/vite.config.ts` 增加开发期 `/api -> http://127.0.0.1:8000` proxy，修复前端 dev server 下 `/api/v1/...` 无法自动转发到后端的问题
+- 新增 `frontend/src/services/request.ts`，封装普通 JSON API 的 baseURL 拼接、请求体序列化、响应解析和基础错误对象，并支持 `VITE_API_BASE_URL`
+- 调整 `frontend/src/services/chatTest.ts`：非流式 run 接口走普通 request 封装；stream 接口继续使用 fetch + ReadableStream，只复用统一 URL 拼接
+- 本次不修改后端代码，不新增依赖，不在前端写 `LLM_API_KEY` 或真实模型服务 baseURL，不改变业务功能
+
+影响范围：
+- frontend/vite.config.ts
+- frontend/src/services/request.ts
+- frontend/src/services/chatTest.ts
+- docs/modules/chat-test/phase-2-5-stream.md
+- README.md
+
+验证方式：
+- `cd frontend && npm run build`
+- 本地联调时先启动后端 `cd backend && python -m uvicorn app.main:app --reload`，再启动前端 `cd frontend && npm run dev`，访问 `/chat-test` 验证 `/api/v1/...` 请求由 Vite proxy 转发

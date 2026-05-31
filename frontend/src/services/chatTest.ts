@@ -1,6 +1,7 @@
 import { getKnowledgeCategories, getKnowledgeDocumentList } from './knowledge';
 import { getModelConfigList } from './model';
 import { getPromptList } from './prompt';
+import { buildApiUrl, request, RequestError } from './request';
 import type {
   ChatTestFormData,
   ChatTestKnowledgeOption,
@@ -243,28 +244,27 @@ export function buildParamsSummary(params: ChatTestParams): string {
 export async function runPromptTestApi(
   payload: ChatTestRunRequest,
 ): Promise<ChatTestRunResponse> {
-  let response: Response;
+  let responseData: ChatTestRunResponse;
 
   try {
-    response = await fetch(CHAT_TEST_RUN_API_PATH, {
+    responseData = await request<ChatTestRunResponse>(CHAT_TEST_RUN_API_PATH, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+      body: payload,
     });
-  } catch {
-    throw new ChatTestApiError('网络异常，无法连接后端 ChatTest 服务', 0);
-  }
+  } catch (error) {
+    if (error instanceof RequestError) {
+      if (error.status === 0) {
+        throw new ChatTestApiError('网络异常，无法连接后端 ChatTest 服务', 0);
+      }
 
-  const responseData = (await response.json().catch(() => null)) as unknown;
+      throw new ChatTestApiError(getRunApiErrorMessage(error.status), error.status);
+    }
 
-  if (!response.ok) {
-    throw new ChatTestApiError(getRunApiErrorMessage(response.status), response.status);
+    throw error;
   }
 
   if (!isChatTestRunResponse(responseData)) {
-    throw new ChatTestApiError('后端返回结构异常，请稍后重试', response.status);
+    throw new ChatTestApiError('后端返回结构异常，请稍后重试', 200);
   }
 
   return responseData;
@@ -338,7 +338,7 @@ export async function runPromptTestStreamApi(
   let response: Response;
 
   try {
-    response = await fetch(CHAT_TEST_STREAM_API_PATH, {
+    response = await fetch(buildApiUrl(CHAT_TEST_STREAM_API_PATH), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
