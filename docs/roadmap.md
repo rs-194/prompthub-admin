@@ -23,7 +23,7 @@
 ## v0.5 对话测试
 - 目标：提供后台内的模型对话测试能力。
 - 计划内容：测试输入区、历史记录、基础参数控制。
-- 当前状态：进行中（已完成对话测试 / Prompt 调试台 v3 mock 基础能力；Phase 2.4 已将前端运行测试默认路径接入 `POST /api/v1/chat-test/run`；Phase 2.5 已新增 `POST /api/v1/chat-test/stream` 并将前端默认运行路径切换为 fetch stream + NDJSON 真实流式输出，支持逐段展示和 AbortController 停止生成；Phase 2.6 已完成 TestRecord 详情 Drawer，列表只展示 `outputPreview`，完整 output 通过 `GET /api/v1/test-records/{id}` 按需加载；Prompt / Model / Knowledge 仍是前端配置源；当前不是原生 EventSource SSE，不做真实 RAG，用户主动停止时 v1 不保存 stopped 记录）。
+- 当前状态：进行中（已完成对话测试 / Prompt 调试台 v3 mock 基础能力；Phase 2.4 已将前端运行测试默认路径接入 `POST /api/v1/chat-test/run`；Phase 2.5 已新增 `POST /api/v1/chat-test/stream` 并将前端默认运行路径切换为 fetch stream + NDJSON 真实流式输出，支持逐段展示和 AbortController 停止生成；Phase 2.6 已完成 TestRecord 详情 Drawer，列表只展示 `outputPreview`，完整 output 通过 `GET /api/v1/test-records/{id}` 按需加载；Phase 2.7 已完成基于历史 TestRecord 的双记录前端对比，可选择 2 条记录并排查看模型、参数、知识库上下文、耗时、用户输入和完整 output；Prompt / Model / Knowledge 仍是前端配置源；当前不是原生 EventSource SSE，不做多模型并发生成，不做多路 stream，不做真实 RAG，用户主动停止时 v1 不保存 stopped 记录）。
 
 ## v0.6 知识库管理
 - 目标：提供知识条目管理与检索基础能力。
@@ -33,13 +33,13 @@
 ## v0.7 FastAPI 后端接入
 - 目标：完成前后端基础联调。
 - 计划内容：接口规范、后端项目骨架、TestRecord 持久化、ChatTest mock stream、后续鉴权基础与关键模块 API 对接。
-- 当前状态：进行中（Phase 2.1 FastAPI 后端最小骨架已完成；Phase 2.2 已新增 TestRecord 持久化 CRUD 接口，支持创建、分页列表、详情、删除和 keyword 轻量查询；Phase 2.3 已新增 `POST /api/v1/chat-test/run`，支持真实 LLM 非流式调用并保存 TestRecord；Phase 2.4 已完成前端 ChatTest 接入该 run 接口；Phase 2.5 已新增真实 fetch stream + StreamingResponse + NDJSON 输出接口并完成前端流式消费；当前尚未实现真实 RAG、真实认证 / JWT / RBAC，也未迁移 Prompt / Model / Knowledge 后端表）。
+- 当前状态：进行中（Phase 2.1 FastAPI 后端最小骨架已完成；Phase 2.2 已新增 TestRecord 持久化 CRUD 接口，支持创建、分页列表、详情、删除和 keyword 轻量查询；Phase 2.3 已新增 `POST /api/v1/chat-test/run`，支持真实 LLM 非流式调用并保存 TestRecord；Phase 2.4 已完成前端 ChatTest 接入该 run 接口；Phase 2.5 已新增真实 fetch stream + StreamingResponse + NDJSON 输出接口并完成前端流式消费；Phase 2.7 的双记录对比复用 `GET /api/v1/test-records/{id}`，不新增后端 compareGroup 表；当前尚未实现真实 RAG、真实认证 / JWT / RBAC，也未迁移 Prompt / Model / Knowledge 后端表）。
 
 ## Phase 2 后续顺序
 - Phase 2.4：前端 ChatTest 接入 `/api/v1/chat-test/run`，展示真实 output，并使用后端返回的 record 更新最近测试记录。（已完成）
 - Phase 2.5：真实 fetch stream + StreamingResponse + NDJSON 输出。（已完成；不是原生 EventSource SSE）
-- Phase 2.6：测试记录详情 Drawer。（已完成；多记录对比不在本阶段）
-- Phase 2.7：双记录对比。
+- Phase 2.6：测试记录详情 Drawer。（已完成）
+- Phase 2.7：双记录对比。（已完成；基于历史 TestRecord，不是多模型并发生成）
 - ModelConfig 后端化作为后续增强，不排在 stream 前面。
 
 ## v0.8 登录与权限控制

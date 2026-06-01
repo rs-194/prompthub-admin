@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { ElMessage } from 'element-plus';
 import KnowledgeContextPanel from './components/KnowledgeContextPanel.vue';
 import TestParameterPanel from './components/TestParameterPanel.vue';
+import TestRecordCompareDrawer from './components/TestRecordCompareDrawer.vue';
 import TestRecordDetailDrawer from './components/TestRecordDetailDrawer.vue';
 import TestRecordTable from './components/TestRecordTable.vue';
 import TestResultPanel from './components/TestResultPanel.vue';
@@ -47,6 +49,12 @@ const detailLoading = ref(false);
 const detailError = ref('');
 const selectedRecordId = ref<number | null>(null);
 const selectedRecordDetail = ref<TestRecordDetail | null>(null);
+const selectedCompareRecordIds = ref<number[]>([]);
+const compareDrawerVisible = ref(false);
+const compareLoading = ref(false);
+const compareError = ref('');
+const compareRecordIds = ref<number[]>([]);
+const compareRecords = ref<TestRecordDetail[]>([]);
 const testParams = ref<ChatTestParams>({
   temperature: 0.7,
   maxTokens: 800,
@@ -365,6 +373,49 @@ function handleDetailDrawerVisibleChange(visible: boolean) {
   }
 }
 
+function handleRecordSelectionChange(recordIds: number[]) {
+  selectedCompareRecordIds.value = recordIds;
+}
+
+async function handleOpenRecordCompare() {
+  if (selectedCompareRecordIds.value.length !== 2) {
+    ElMessage.warning('请选择 2 条记录进行对比');
+    return;
+  }
+
+  const currentIds = [...selectedCompareRecordIds.value];
+  compareRecordIds.value = currentIds;
+  compareRecords.value = [];
+  compareError.value = '';
+  compareLoading.value = true;
+  compareDrawerVisible.value = true;
+
+  try {
+    const records = await Promise.all(currentIds.map((id) => getTestRecordDetail(id)));
+
+    if (compareRecordIds.value.join(',') === currentIds.join(',')) {
+      compareRecords.value = records;
+    }
+  } catch (error) {
+    if (compareRecordIds.value.join(',') === currentIds.join(',')) {
+      compareError.value = getTestRecordDetailApiErrorMessage(error);
+    }
+  } finally {
+    if (compareRecordIds.value.join(',') === currentIds.join(',')) {
+      compareLoading.value = false;
+    }
+  }
+}
+
+function handleCompareDrawerVisibleChange(visible: boolean) {
+  compareDrawerVisible.value = visible;
+
+  if (!visible) {
+    compareError.value = '';
+    compareRecordIds.value = [];
+  }
+}
+
 onMounted(() => {
   void loadInitialData();
 });
@@ -531,6 +582,8 @@ onBeforeUnmount(() => {
     <TestRecordTable
       :records="testRecords"
       @view-detail="handleOpenRecordDetail"
+      @selection-change="handleRecordSelectionChange"
+      @compare-selected="handleOpenRecordCompare"
     />
 
     <TestRecordDetailDrawer
@@ -539,6 +592,14 @@ onBeforeUnmount(() => {
       :loading="detailLoading"
       :error-message="detailError"
       @update:visible="handleDetailDrawerVisibleChange"
+    />
+
+    <TestRecordCompareDrawer
+      :visible="compareDrawerVisible"
+      :records="compareRecords"
+      :loading="compareLoading"
+      :error-message="compareError"
+      @update:visible="handleCompareDrawerVisibleChange"
     />
   </div>
 </template>

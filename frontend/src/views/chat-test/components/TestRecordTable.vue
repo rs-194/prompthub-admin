@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { ElMessage, type TableInstance } from 'element-plus';
 import type { ChatTestRecord } from '@/types/chatTest';
 
 // 展示最近 Prompt 测试记录，本组件只负责表格渲染，不调用 service、不维护业务状态。
@@ -8,19 +10,63 @@ defineProps<{
 
 const emit = defineEmits<{
   viewDetail: [recordId: number];
+  selectionChange: [recordIds: number[]];
+  compareSelected: [];
 }>();
+
+const tableRef = ref<TableInstance>();
+const selectedRecords = ref<ChatTestRecord[]>([]);
+
+function canSelectRecord(row: ChatTestRecord) {
+  return selectedRecords.value.some((record) => record.id === row.id) || selectedRecords.value.length < 2;
+}
+
+function handleSelectionChange(selection: ChatTestRecord[]) {
+  if (selection.length > 2) {
+    const latestSelection = selection.slice(-2);
+
+    ElMessage.warning('最多只能选择 2 条记录进行对比');
+    tableRef.value?.clearSelection();
+    latestSelection.forEach((record) => {
+      tableRef.value?.toggleRowSelection(record, true);
+    });
+    return;
+  }
+
+  selectedRecords.value = selection;
+  emit('selectionChange', selection.map((record) => record.id));
+}
 </script>
 
 <template>
   <el-card shadow="never">
     <template #header>
       <div class="card-header">
-        <span>最近测试记录</span>
-        <el-tag size="small" type="info">{{ records.length }} 条</el-tag>
+        <div class="header-title">
+          <span>最近测试记录</span>
+          <el-tag size="small" type="info">{{ records.length }} 条</el-tag>
+        </div>
+        <el-button
+          type="primary"
+          plain
+          :disabled="selectedRecords.length !== 2"
+          title="请选择 2 条记录进行对比"
+          @click="emit('compareSelected')"
+        >
+          对比选中记录
+        </el-button>
       </div>
     </template>
 
-    <el-table :data="records" empty-text="暂无测试记录" stripe>
+    <el-table
+      ref="tableRef"
+      :data="records"
+      row-key="id"
+      empty-text="暂无测试记录"
+      stripe
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column type="selection" width="48" :selectable="canSelectRecord" />
       <el-table-column prop="promptTitle" label="提示词" min-width="140" />
       <el-table-column prop="modelName" label="模型配置" min-width="150" />
       <el-table-column label="知识库" width="130">
@@ -75,6 +121,13 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .empty-knowledge {

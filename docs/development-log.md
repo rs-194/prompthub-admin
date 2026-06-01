@@ -592,3 +592,27 @@
 - `cd frontend && npm run build`
 - 人工验证路径：启动后端和前端，访问 `/chat-test`，确保已有测试记录或先运行一次生成记录，点击最近测试记录的“详情”，确认 Drawer 展示完整 output、userInput、params、knowledgeTitles、durationMs 和 createdAt
 - 异常验证路径：请求不存在的 record id 时，Drawer 内展示“测试记录不存在或已被删除”
+
+### 2026-06-01：Phase 2.7 TestRecord 双记录对比
+
+内容：
+- 更新 `TestRecordTable.vue`，在最近测试记录表格中增加 selection 列，最多选择 2 条记录，并新增“对比选中记录”入口
+- 新增 `TestRecordCompareDrawer.vue`，并排展示两条历史 TestRecord 的模型、参数、知识库上下文、耗时、用户输入和完整 output
+- 更新 `ChatTestView.vue`，由父组件管理 compare Drawer 的 visible、loading、error、empty 和 records 状态，并分别调用 `GET /api/v1/test-records/{id}` 获取两条完整记录
+- 新增 Phase 2.7 模块文档，并同步 README、roadmap、模块索引和 chat-test interview notes
+- 本阶段不修改后端代码，不新增 compareGroup 表，不做多模型并发生成，不做多路 stream，不做真实 RAG / ModelConfig / auth / 多租户
+
+影响范围：
+- frontend/src/views/chat-test
+- docs/modules/chat-test/phase-2-7-record-compare.md
+- docs/modules/README.md
+- docs/development-log.md
+- docs/roadmap.md
+- README.md
+- notes/interview/chat-test-notes.md
+- notes/interview/chat-test-qa.md
+
+验证方式：
+- `cd frontend && npm run build`
+- 人工验证路径：启动后端和前端，访问 `/chat-test`，确保已有至少 2 条 TestRecord，在最近测试记录中选择 2 条并点击“对比选中记录”，确认 Compare Drawer 展示完整 output、userInput、params、knowledgeTitles、durationMs 和 createdAt
+- 交互验证路径：只选 0 或 1 条时对比按钮禁用；尝试选择第 3 条时被限制；关闭 Compare Drawer 后仍可继续 stream 测试；单条详情 Drawer 仍可正常使用
