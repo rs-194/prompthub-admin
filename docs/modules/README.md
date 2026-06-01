@@ -14,6 +14,7 @@
 | FastAPI 后端 | Phase 2.3 真实 LLM 非流式调用 | `backend/v3-llm-chat-test-run.md` | 已实现 |
 | 对话测试 / Prompt 调试台 | Phase 2.4 前端接入真实 run 接口 | `chat-test/phase-2-4-real-run-api.md` | 已实现 |
 | 对话测试 / Prompt 调试台 | Phase 2.5 真实 fetch stream 流式输出 | `chat-test/phase-2-5-stream.md` | 已实现 |
+| 对话测试 / Prompt 调试台 | Phase 2.6 TestRecord 详情 Drawer | `chat-test/phase-2-6-record-detail-drawer.md` | 已实现 |
 
 ## 后端阶段说明
 
@@ -28,7 +29,7 @@
 
 后续阶段顺序：
 
-1. Phase 2.6：测试记录详情 Drawer / 对比。
+1. Phase 2.7：双记录对比。
 2. 后续增强：failed / stopped record 持久化、真实 RAG、ModelConfig 后端化。
 
 ModelConfig 后端化是后续增强，不排在 stream 前面。

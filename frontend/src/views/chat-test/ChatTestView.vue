@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import KnowledgeContextPanel from './components/KnowledgeContextPanel.vue';
 import TestParameterPanel from './components/TestParameterPanel.vue';
+import TestRecordDetailDrawer from './components/TestRecordDetailDrawer.vue';
 import TestRecordTable from './components/TestRecordTable.vue';
 import TestResultPanel from './components/TestResultPanel.vue';
 import {
@@ -11,6 +12,8 @@ import {
   getChatTestModelOptions,
   getChatTestPromptOptions,
   getChatTestRecords,
+  getTestRecordDetail,
+  getTestRecordDetailApiErrorMessage,
   mapTestRecordDetailToRecord,
   runPromptTestStreamApi,
 } from '@/services/chatTest';
@@ -22,6 +25,7 @@ import type {
   ChatTestRecord,
   ChatTestRunRequest,
   ChatTestResult,
+  TestRecordDetail,
 } from '@/types/chatTest';
 
 const promptOptions = ref<ChatTestPromptOption[]>([]);
@@ -38,6 +42,11 @@ const streaming = ref(false);
 const streamingText = ref('');
 const abortController = ref<AbortController | null>(null);
 const errorMessage = ref('');
+const detailDrawerVisible = ref(false);
+const detailLoading = ref(false);
+const detailError = ref('');
+const selectedRecordId = ref<number | null>(null);
+const selectedRecordDetail = ref<TestRecordDetail | null>(null);
 const testParams = ref<ChatTestParams>({
   temperature: 0.7,
   maxTokens: 800,
@@ -324,6 +333,38 @@ function handleClearResult() {
   loading.value = false;
 }
 
+async function handleOpenRecordDetail(recordId: number) {
+  selectedRecordId.value = recordId;
+  selectedRecordDetail.value = null;
+  detailError.value = '';
+  detailLoading.value = true;
+  detailDrawerVisible.value = true;
+
+  try {
+    const detail = await getTestRecordDetail(recordId);
+    if (selectedRecordId.value === recordId) {
+      selectedRecordDetail.value = detail;
+    }
+  } catch (error) {
+    if (selectedRecordId.value === recordId) {
+      detailError.value = getTestRecordDetailApiErrorMessage(error);
+    }
+  } finally {
+    if (selectedRecordId.value === recordId) {
+      detailLoading.value = false;
+    }
+  }
+}
+
+function handleDetailDrawerVisibleChange(visible: boolean) {
+  detailDrawerVisible.value = visible;
+
+  if (!visible) {
+    detailError.value = '';
+    selectedRecordId.value = null;
+  }
+}
+
 onMounted(() => {
   void loadInitialData();
 });
@@ -487,7 +528,18 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <TestRecordTable :records="testRecords" />
+    <TestRecordTable
+      :records="testRecords"
+      @view-detail="handleOpenRecordDetail"
+    />
+
+    <TestRecordDetailDrawer
+      :visible="detailDrawerVisible"
+      :detail="selectedRecordDetail"
+      :loading="detailLoading"
+      :error-message="detailError"
+      @update:visible="handleDetailDrawerVisibleChange"
+    />
   </div>
 </template>
 

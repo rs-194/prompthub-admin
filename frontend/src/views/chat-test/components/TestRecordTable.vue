@@ -5,6 +5,10 @@ import type { ChatTestRecord } from '@/types/chatTest';
 defineProps<{
   records: ChatTestRecord[];
 }>();
+
+const emit = defineEmits<{
+  viewDetail: [recordId: number];
+}>();
 </script>
 
 <template>
@@ -51,6 +55,17 @@ defineProps<{
         </template>
       </el-table-column>
       <el-table-column prop="createdAt" label="时间" width="170" />
+      <el-table-column label="操作" width="100" fixed="right">
+        <template #default="{ row }">
+          <el-button
+            type="primary"
+            link
+            @click="emit('viewDetail', row.id)"
+          >
+            详情
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </el-card>
 </template>

@@ -22,6 +22,7 @@ import type {
 const chatTestRecords: ChatTestRecord[] = [];
 const CHAT_TEST_RUN_API_PATH = '/api/v1/chat-test/run';
 const CHAT_TEST_STREAM_API_PATH = '/api/v1/chat-test/stream';
+const TEST_RECORDS_API_PATH = '/api/v1/test-records';
 
 export class ChatTestApiError extends Error {
   readonly status: number;
@@ -160,6 +161,43 @@ export function getChatTestApiErrorMessage(error: unknown) {
   }
 
   return '运行测试失败，请检查网络或稍后重试';
+}
+
+function getTestRecordDetailErrorMessage(status: number) {
+  const statusMessageMap: Record<number, string> = {
+    0: '网络异常，无法连接后端测试记录服务',
+    404: '测试记录不存在或已被删除',
+  };
+
+  return statusMessageMap[status] ?? '获取测试记录详情失败，请稍后重试';
+}
+
+export function getTestRecordDetailApiErrorMessage(error: unknown) {
+  if (error instanceof ChatTestApiError) {
+    return error.message;
+  }
+
+  return '获取测试记录详情失败，请检查网络或稍后重试';
+}
+
+export async function getTestRecordDetail(id: number): Promise<TestRecordDetail> {
+  let responseData: TestRecordDetail;
+
+  try {
+    responseData = await request<TestRecordDetail>(`${TEST_RECORDS_API_PATH}/${id}`);
+  } catch (error) {
+    if (error instanceof RequestError) {
+      throw new ChatTestApiError(getTestRecordDetailErrorMessage(error.status), error.status);
+    }
+
+    throw error;
+  }
+
+  if (!isTestRecordDetail(responseData)) {
+    throw new ChatTestApiError('后端返回测试记录详情结构异常，请稍后重试', 200);
+  }
+
+  return responseData;
 }
 
 export function mapTestRecordDetailToRecord(record: TestRecordDetail): ChatTestRecord {

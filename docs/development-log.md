@@ -562,3 +562,33 @@
 - `cd backend && python -m compileall app`
 - `cd backend && python -c "from app.core.config import settings; print(bool(settings.llm_api_key))"`
 - 不要求真实调用外部 LLM
+
+### 2026-06-01：Phase 2.6 TestRecord 详情 Drawer
+
+内容：
+- 新增 `frontend/src/views/chat-test/components/TestRecordDetailDrawer.vue`，使用 Element Plus Drawer / Descriptions / Card 展示 TestRecord 完整详情
+- 扩展 `frontend/src/services/chatTest.ts`，新增 `getTestRecordDetail(id)`，通过普通 JSON request 封装调用 `GET /api/v1/test-records/{id}`，并处理 404、网络异常和响应结构异常
+- 更新 `ChatTestView.vue`，由父组件管理详情 Drawer 的 visible、loading、error、empty 和 detail 状态
+- 更新 `TestRecordTable.vue`，增加“详情”操作列，只 emit record id，不在表格组件内请求详情
+- 列表仍只展示 `outputPreview`，完整 `output` 仅在打开详情 Drawer 时按需加载
+- 新增 Phase 2.6 模块文档，并同步 README、roadmap、模块索引和 chat-test interview notes
+- 本阶段不修改后端业务逻辑，不做多记录对比，不做多模型并发，不做真实 RAG / ModelConfig / auth / 多租户
+
+影响范围：
+- frontend/src/services/chatTest.ts
+- frontend/components.d.ts
+- frontend/src/views/chat-test/ChatTestView.vue
+- frontend/src/views/chat-test/components/TestRecordTable.vue
+- frontend/src/views/chat-test/components/TestRecordDetailDrawer.vue
+- docs/modules/chat-test/phase-2-6-record-detail-drawer.md
+- docs/modules/README.md
+- docs/development-log.md
+- docs/roadmap.md
+- README.md
+- notes/interview/chat-test-notes.md
+- notes/interview/chat-test-qa.md
+
+验证方式：
+- `cd frontend && npm run build`
+- 人工验证路径：启动后端和前端，访问 `/chat-test`，确保已有测试记录或先运行一次生成记录，点击最近测试记录的“详情”，确认 Drawer 展示完整 output、userInput、params、knowledgeTitles、durationMs 和 createdAt
+- 异常验证路径：请求不存在的 record id 时，Drawer 内展示“测试记录不存在或已被删除”

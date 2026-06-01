@@ -23,7 +23,7 @@
 ## v0.5 对话测试
 - 目标：提供后台内的模型对话测试能力。
 - 计划内容：测试输入区、历史记录、基础参数控制。
-- 当前状态：进行中（已完成对话测试 / Prompt 调试台 v3 mock 基础能力；Phase 2.4 已将前端运行测试默认路径接入 `POST /api/v1/chat-test/run`；Phase 2.5 已新增 `POST /api/v1/chat-test/stream` 并将前端默认运行路径切换为 fetch stream + NDJSON 真实流式输出，支持逐段展示和 AbortController 停止生成；Prompt / Model / Knowledge 仍是前端配置源；当前不是原生 EventSource SSE，不做真实 RAG，用户主动停止时 v1 不保存 stopped 记录）。
+- 当前状态：进行中（已完成对话测试 / Prompt 调试台 v3 mock 基础能力；Phase 2.4 已将前端运行测试默认路径接入 `POST /api/v1/chat-test/run`；Phase 2.5 已新增 `POST /api/v1/chat-test/stream` 并将前端默认运行路径切换为 fetch stream + NDJSON 真实流式输出，支持逐段展示和 AbortController 停止生成；Phase 2.6 已完成 TestRecord 详情 Drawer，列表只展示 `outputPreview`，完整 output 通过 `GET /api/v1/test-records/{id}` 按需加载；Prompt / Model / Knowledge 仍是前端配置源；当前不是原生 EventSource SSE，不做真实 RAG，用户主动停止时 v1 不保存 stopped 记录）。
 
 ## v0.6 知识库管理
 - 目标：提供知识条目管理与检索基础能力。
@@ -38,7 +38,8 @@
 ## Phase 2 后续顺序
 - Phase 2.4：前端 ChatTest 接入 `/api/v1/chat-test/run`，展示真实 output，并使用后端返回的 record 更新最近测试记录。（已完成）
 - Phase 2.5：真实 fetch stream + StreamingResponse + NDJSON 输出。（已完成；不是原生 EventSource SSE）
-- Phase 2.6：测试记录详情 Drawer / 对比。
+- Phase 2.6：测试记录详情 Drawer。（已完成；多记录对比不在本阶段）
+- Phase 2.7：双记录对比。
 - ModelConfig 后端化作为后续增强，不排在 stream 前面。
 
 ## v0.8 登录与权限控制
