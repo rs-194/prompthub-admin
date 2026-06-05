@@ -158,3 +158,32 @@ DELETE /api/v1/test-records/{id}
 - `POST /api/v1/test-records` 由后端生成 `outputPreview` 和 `createdAt`。
 - `knowledgeTitles` 当前以 JSON 字符串存储，对外仍返回数组。
 - `status: stopped` 仍是记录状态预留；Phase 2.5 已支持前端停止生成，但用户主动停止时 v1 不保存 stopped 记录。
+
+## ModelConfig 状态接口
+
+```text
+GET /api/v1/model-config
+```
+
+该接口用于 Phase 2.8 轻量展示后端可信 LLM 配置状态，读取来源是 `settings` / 后端环境变量。
+
+返回字段包括：
+
+```json
+{
+  "provider": "OpenAI-Compatible",
+  "model": "deepseek-chat",
+  "baseUrlHost": "api.deepseek.com",
+  "enabled": true,
+  "apiKeyConfigured": true,
+  "temperature": 0.7,
+  "maxTokens": 1024,
+  "timeoutSeconds": 60
+}
+```
+
+说明：
+- API Key 只返回是否已配置的布尔值，不返回明文。
+- 不返回 Authorization、headers 或完整敏感请求信息。
+- 配置缺失时接口仍返回 200，并通过 `enabled=false` 表示 ChatTest 真实调用不可用。
+- 当前不支持 API Key 输入、加密存储、用户级模型配置、ModelConfig CRUD 或多 provider 管理。

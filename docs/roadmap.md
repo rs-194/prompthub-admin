@@ -41,7 +41,8 @@
 - Phase 2.6：测试记录详情 Drawer。（已完成）
 - Phase 2.7：双记录对比。（已完成；基于历史 TestRecord，不是多模型并发生成）
 - Phase 2.8：README 展示化与项目包装整理。（已完成；文档展示整理，不修改业务代码）
-- 后续建议顺序：轻量 ModelConfig 展示、Knowledge 后端化轻量版、记录详情 / 对比继续优化、failed / stopped record 保存策略、真实 RAG / embedding、auth / Workspace / 多租户。
+- Phase 2.8：轻量 ModelConfig 展示。（已完成；读取后端可信 LLM 配置状态，不返回 API Key，不做 CRUD）
+- 后续建议顺序：Knowledge 后端化轻量版、记录详情 / 对比继续优化、failed / stopped record 保存策略、真实 RAG / embedding、auth / Workspace / 多租户。
 
 ## v0.8 登录与权限控制
 - 目标：完善后台访问控制能力。
@@ -52,3 +53,12 @@
 - 目标：完善项目展示与交付文档。
 - 计划内容：README 强化、页面截图、部署与运行说明。
 - 当前状态：进行中（Phase 2.8 已完成 README 展示化与项目包装整理，新增 `docs/project-showcase.md` 用于项目投递、面试讲解和简历描述准备；真实截图、部署文档仍待补充）。
+
+## Phase 2.8 轻量 ModelConfig 展示补充
+
+- 当前状态：已完成轻量 ModelConfig 展示。
+- 后端新增 `GET /api/v1/model-config`，读取 settings / 环境变量中的可信 LLM 配置状态。
+- 前端模型配置页面展示 provider、model、baseUrlHost、enabled、apiKeyConfigured、temperature、maxTokens 和 timeoutSeconds。
+- API Key 不返回明文，只展示“已配置 / 未配置”。
+- 前端 mock 模型列表仍仅用于展示，不直接决定真实 `LLM_MODEL`。
+- 当前仍不支持 API Key 输入、加密存储、多用户模型配置、ModelConfig CRUD、多 provider 管理、真实 RAG、auth / RBAC 或 Workspace。

@@ -189,3 +189,12 @@ npm run dev
 - [路线图](docs/roadmap.md)
 - [开发记录](docs/development-log.md)
 - [项目展示说明](docs/project-showcase.md)
+
+## Phase 2.8 轻量 ModelConfig 展示
+
+- 已新增 `GET /api/v1/model-config`，用于读取后端可信 LLM 环境配置状态。
+- 前端模型配置页面已展示 provider、model、baseUrlHost、enabled、API Key 是否已配置、temperature、maxTokens 和 timeoutSeconds。
+- API Key 只由后端 `.env` / 环境变量托管，接口不返回明文 key、Authorization 或 headers。
+- 前端只显示“API Key 已配置 / 未配置”，不提供 API Key 输入框。
+- 前端 mock 模型列表仍保留为展示用数据，不会改变后端真实 `LLM_MODEL`。
+- 当前仍不支持 ModelConfig CRUD、多用户模型配置、多 provider 管理、API Key 加密存储、真实 RAG、auth / RBAC 或 Workspace。

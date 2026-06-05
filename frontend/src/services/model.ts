@@ -1,4 +1,38 @@
-import type { ModelConfigFormData, ModelConfigItem } from '@/types/model';
+import { request } from './request';
+import type {
+  BackendModelConfigStatus,
+  ModelConfigFormData,
+  ModelConfigItem,
+} from '@/types/model';
+
+function isBackendModelConfigStatus(data: unknown): data is BackendModelConfigStatus {
+  if (typeof data !== 'object' || data === null) {
+    return false;
+  }
+
+  const candidate = data as Record<string, unknown>;
+
+  return (
+    typeof candidate.provider === 'string' &&
+    typeof candidate.model === 'string' &&
+    typeof candidate.baseUrlHost === 'string' &&
+    typeof candidate.enabled === 'boolean' &&
+    typeof candidate.apiKeyConfigured === 'boolean' &&
+    typeof candidate.temperature === 'number' &&
+    typeof candidate.maxTokens === 'number' &&
+    typeof candidate.timeoutSeconds === 'number'
+  );
+}
+
+export async function getModelConfig(): Promise<BackendModelConfigStatus> {
+  const data = await request<unknown>('/api/v1/model-config');
+
+  if (!isBackendModelConfigStatus(data)) {
+    throw new Error('Invalid model config response');
+  }
+
+  return data;
+}
 
 // 当前为前端 mock 数据，刷新页面后会恢复为初始数组；后端待接入，不真实调用大模型 API。
 // 本阶段刻意不实现 API Key 管理：不保存、不展示、不加密真实 API Key。

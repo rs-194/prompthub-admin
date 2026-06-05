@@ -637,3 +637,30 @@
 验证方式：
 - `git diff --check`
 - 未执行 `npm run build`，本次不修改代码
+
+### 2026-06-05：Phase 2.8 轻量 ModelConfig 展示
+
+内容：
+- 新增 `GET /api/v1/model-config`，从后端 settings / 环境变量读取 LLM 配置状态
+- 返回 provider、model、baseUrlHost、enabled、apiKeyConfigured、temperature、maxTokens、timeoutSeconds 等脱敏字段
+- 前端模型配置页面新增“后端真实调用配置”卡片，显示 API Key 已配置 / 未配置但不显示 key
+- 保留原前端 mock 模型列表，并明确它只用于前端展示，不会改变后端真实 `LLM_MODEL`
+- 本阶段不实现 API Key 输入、加密存储、用户级模型配置、ModelConfig CRUD 或多 provider 管理
+
+影响范围：
+- backend/app/api/v1
+- backend/app/modules/model_config
+- frontend/src/views/models
+- frontend/src/services/model.ts
+- frontend/src/types/model.ts
+- docs/modules/model
+- README.md
+- backend/README.md
+- docs/modules/README.md
+- docs/roadmap.md
+- notes/interview
+
+验证方式：
+- `cd backend && python -m compileall app`
+- `cd frontend && npm run build`
+- 人工验证路径：启动后端和前端，访问 `/models`，确认页面展示后端模型配置状态且不显示 API Key 明文

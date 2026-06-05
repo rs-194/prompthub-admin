@@ -3,65 +3,143 @@
     <div class="model-config-header">
       <div>
         <h1>模型配置</h1>
-        <p>用于维护 Prompt 调试台可选择的大模型接口配置</p>
+        <p>展示后端可信 LLM 环境配置状态，同时保留前端 mock 模型列表用于页面演示。</p>
       </div>
-      <el-button type="primary" @click="handleCreate">新增模型配置</el-button>
+      <el-button type="primary" @click="handleCreate">
+        新增前端 mock 配置
+      </el-button>
     </div>
 
-    <div class="model-config-filters">
-      <el-input
-        v-model="searchKeyword"
-        class="model-config-filters__search"
-        clearable
-        placeholder="搜索名称、模型标识、Base URL 或备注"
-      />
-      <el-select
-        v-model="selectedProvider"
-        class="model-config-filters__provider"
-        clearable
-        placeholder="选择供应商"
-      >
-        <el-option
-          v-for="provider in providerOptions"
-          :key="provider.value"
-          :label="provider.label"
-          :value="provider.value"
+    <section class="backend-config-panel">
+      <div class="backend-config-panel__header">
+        <div>
+          <h2>后端真实调用配置</h2>
+          <p>读取自后端环境变量，仅展示脱敏状态，不显示 API Key。</p>
+        </div>
+        <el-button :loading="backendConfigLoading" @click="loadBackendModelConfig">
+          刷新
+        </el-button>
+      </div>
+
+      <div v-if="backendConfigError" class="backend-config-panel__error">
+        {{ backendConfigError }}
+      </div>
+
+      <div v-else-if="backendConfig" class="backend-config-panel__body">
+        <div class="status-line" :class="{ 'status-line--ready': backendConfig.enabled }">
+          {{ backendConfig.enabled
+            ? '后端 LLM 配置已就绪，ChatTest 可调用真实模型'
+            : '后端 LLM 配置未完整，ChatTest 真实调用不可用' }}
+        </div>
+
+        <div class="backend-config-grid">
+          <div class="backend-config-item">
+            <span>provider</span>
+            <strong>{{ backendConfig.provider || '-' }}</strong>
+          </div>
+          <div class="backend-config-item">
+            <span>model</span>
+            <strong>{{ backendConfig.model || '-' }}</strong>
+          </div>
+          <div class="backend-config-item">
+            <span>baseUrlHost</span>
+            <strong>{{ backendConfig.baseUrlHost || '-' }}</strong>
+          </div>
+          <div class="backend-config-item">
+            <span>enabled</span>
+            <el-tag :type="backendConfig.enabled ? 'success' : 'info'">
+              {{ backendConfig.enabled ? '已就绪' : '未完整' }}
+            </el-tag>
+          </div>
+          <div class="backend-config-item">
+            <span>API Key</span>
+            <el-tag :type="backendConfig.apiKeyConfigured ? 'success' : 'warning'">
+              {{ backendConfig.apiKeyConfigured ? '已配置' : '未配置' }}
+            </el-tag>
+          </div>
+          <div class="backend-config-item">
+            <span>temperature</span>
+            <strong>{{ backendConfig.temperature }}</strong>
+          </div>
+          <div class="backend-config-item">
+            <span>maxTokens</span>
+            <strong>{{ backendConfig.maxTokens }}</strong>
+          </div>
+          <div class="backend-config-item">
+            <span>timeoutSeconds</span>
+            <strong>{{ backendConfig.timeoutSeconds }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="backend-config-panel__empty">
+        正在读取后端模型配置状态...
+      </div>
+    </section>
+
+    <section class="mock-list-panel">
+      <div class="mock-list-panel__header">
+        <div>
+          <h2>前端展示用 mock 模型列表</h2>
+          <p>此列表只影响前端页面展示和 TestRecord 展示字段，不会改变后端真实调用的 LLM_MODEL。</p>
+        </div>
+      </div>
+
+      <div class="model-config-filters">
+        <el-input
+          v-model="searchKeyword"
+          class="model-config-filters__search"
+          clearable
+          placeholder="搜索名称、模型标识、Base URL 或备注"
         />
-      </el-select>
-      <el-button @click="handleReset">重置</el-button>
-    </div>
-
-    <el-table :data="filteredModelConfigs" stripe>
-      <el-table-column prop="name" label="配置名称" min-width="170" />
-      <el-table-column label="供应商" min-width="150">
-        <template #default="{ row }">
-          {{ getProviderLabel(row.provider) }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="baseUrl" label="Base URL" min-width="220" show-overflow-tooltip />
-      <el-table-column prop="modelName" label="模型标识" min-width="170" />
-      <el-table-column prop="temperature" label="temperature" width="120" />
-      <el-table-column prop="maxTokens" label="maxTokens" width="120" />
-      <el-table-column label="启用状态" width="110">
-        <template #default="{ row }">
-          <el-switch
-            :model-value="row.enabled"
-            @change="handleSwitchChange(row, $event)"
+        <el-select
+          v-model="selectedProvider"
+          class="model-config-filters__provider"
+          clearable
+          placeholder="选择供应商"
+        >
+          <el-option
+            v-for="provider in providerOptions"
+            :key="provider.value"
+            :label="provider.label"
+            :value="provider.value"
           />
-        </template>
-      </el-table-column>
-      <el-table-column prop="updatedAt" label="更新时间" min-width="160" />
-      <el-table-column label="操作" fixed="right" width="150">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="handleEdit(row)">
-            编辑
-          </el-button>
-          <el-button link type="danger" @click="handleDelete(row)">
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        </el-select>
+        <el-button @click="handleReset">重置</el-button>
+      </div>
+
+      <el-table :data="filteredModelConfigs" stripe>
+        <el-table-column prop="name" label="配置名称" min-width="170" />
+        <el-table-column label="供应商" min-width="150">
+          <template #default="{ row }">
+            {{ getProviderLabel(row.provider) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="baseUrl" label="Mock Base URL" min-width="220" show-overflow-tooltip />
+        <el-table-column prop="modelName" label="前端展示模型标识" min-width="170" />
+        <el-table-column prop="temperature" label="temperature" width="120" />
+        <el-table-column prop="maxTokens" label="maxTokens" width="120" />
+        <el-table-column label="mock 启用状态" width="120">
+          <template #default="{ row }">
+            <el-switch
+              :model-value="row.enabled"
+              @change="handleSwitchChange(row, $event)"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column prop="updatedAt" label="更新时间" min-width="160" />
+        <el-table-column label="mock 操作" fixed="right" width="170">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="handleEdit(row)">
+              编辑
+            </el-button>
+            <el-button link type="danger" @click="handleDelete(row)">
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </section>
 
     <model-config-dialog
       v-model:visible="dialogVisible"
@@ -79,11 +157,13 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   createModelConfig,
   deleteModelConfig,
+  getModelConfig,
   getModelConfigList,
   toggleModelConfigEnabled,
   updateModelConfig,
 } from '@/services/model';
 import type {
+  BackendModelConfigStatus,
   ModelConfigDialogMode,
   ModelConfigFormData,
   ModelConfigItem,
@@ -102,22 +182,17 @@ const providerOptions: ProviderOption[] = [
   { label: 'Custom', value: 'custom' },
 ];
 
-// 页面状态只负责当前模型配置页的搜索、供应商筛选、列表、弹窗和当前编辑项。
 const searchKeyword = ref('');
 const selectedProvider = ref<ModelProvider | ''>('');
 const modelConfigs = ref<ModelConfigItem[]>([]);
+const backendConfig = ref<BackendModelConfigStatus | null>(null);
+const backendConfigLoading = ref(false);
+const backendConfigError = ref('');
 const dialogVisible = ref(false);
 const dialogMode = ref<ModelConfigDialogMode>('create');
 const editingModelConfigId = ref<number | null>(null);
 const currentFormData = ref<ModelConfigFormData | null>(null);
 
-// 供应商中文展示文案由静态选项派生，用 computed 保持映射和选项来源一致。
-/**
- * 根据供应商选项派生 provider 到展示文案的映射。
- *
- * 这是由 providerOptions 计算出来的展示辅助数据，不是独立状态；
- * 表格展示供应商名称时通过它把 provider value 转为可读 label。
- */
 const providerLabelMap = computed(() => {
   return providerOptions.reduce<Record<ModelProvider, string>>(
     (map, provider) => {
@@ -132,14 +207,6 @@ const providerLabelMap = computed(() => {
   );
 });
 
-// 表格展示数据由原始列表、搜索词和供应商筛选推导，因此使用 computed 自动更新。
-/**
- * 根据模型配置列表、搜索词和供应商筛选派生表格最终数据。
- *
- * computed 只负责派生展示结果，不额外维护一份筛选后的状态；
- * 搜索会匹配配置名称、模型标识、Base URL 和备注，
- * 供应商筛选会匹配 provider，两个条件共同决定最终列表。
- */
 const filteredModelConfigs = computed(() => {
   const keyword = searchKeyword.value.trim().toLowerCase();
 
@@ -158,54 +225,37 @@ const filteredModelConfigs = computed(() => {
   });
 });
 
-/**
- * 获取 provider value 对应的展示文案。
- *
- * 表格渲染供应商列时调用，优先从 providerLabelMap 中取 label；
- * 如果没有匹配项，则回退展示原始 provider。
- *
- * @param provider 模型配置数据中的供应商 value
- * @returns 供应商展示文案或原始 provider
- */
 function getProviderLabel(provider: ModelProvider) {
   return providerLabelMap.value[provider] || provider;
 }
 
-/**
- * 重置模型配置列表筛选条件。
- *
- * 用户点击“重置”时调用，只清空搜索词和供应商筛选；
- * filteredModelConfigs 会根据最新条件自动恢复为当前 service 列表的完整展示结果。
- */
 function handleReset() {
   searchKeyword.value = '';
   selectedProvider.value = '';
 }
 
-/**
- * 加载模型配置列表数据。
- *
- * 页面挂载后调用，新增、编辑、删除和启用/停用成功后也会再次调用；
- * 当前通过 mock service 获取数据，后续接入后端后优先替换 service 内部实现。
- * 操作后重新加载列表，是为了让页面展示和 service 数据源保持一致，
- * 并让搜索、供应商筛选继续基于最新列表派生结果。
- */
+async function loadBackendModelConfig() {
+  backendConfigLoading.value = true;
+  backendConfigError.value = '';
+
+  try {
+    backendConfig.value = await getModelConfig();
+  } catch (error) {
+    backendConfig.value = null;
+    backendConfigError.value =
+      error instanceof Error
+        ? error.message
+        : '后端模型配置状态读取失败';
+  } finally {
+    backendConfigLoading.value = false;
+  }
+}
+
 async function loadModelConfigData() {
-  // 当前从前端 mock service 读取；后端接入后优先替换 service 内部实现。
   modelConfigs.value = await getModelConfigList();
 }
 
-/**
- * 将表格行数据转换为模型配置弹窗表单数据。
- *
- * 点击编辑时调用，只提取表单需要维护的可编辑字段；
- * id 和 updatedAt 仍由父页面/service 负责，不传入子组件表单。
- *
- * @param model 当前要编辑的模型配置列表项
- * @returns 可传给 ModelConfigDialog 的表单数据
- */
 function toFormData(model: ModelConfigItem): ModelConfigFormData {
-  // 编辑表单只需要可修改字段，所以不把 id/updatedAt 传给弹窗。
   return {
     name: model.name,
     provider: model.provider,
@@ -218,101 +268,51 @@ function toFormData(model: ModelConfigItem): ModelConfigFormData {
   };
 }
 
-/**
- * 打开新增模型配置弹窗。
- *
- * 用户点击“新增模型配置”时调用，父组件将弹窗模式设为 create，
- * 清空当前编辑 id 和回填数据，让子组件展示默认空表单。
- */
 function handleCreate() {
-  // create 模式清空编辑 id 和回填数据，弹窗会使用默认空表单。
   dialogMode.value = 'create';
   editingModelConfigId.value = null;
   currentFormData.value = null;
   dialogVisible.value = true;
 }
 
-/**
- * 打开编辑模型配置弹窗。
- *
- * 用户点击表格行“编辑”时调用，父组件记录当前行 id，
- * 并把列表项转换为表单数据传给子组件用于回填。
- *
- * @param model 当前要编辑的模型配置列表项
- */
 function handleEdit(model: ModelConfigItem) {
-  // edit 模式记录当前行 id，并把列表行转换成表单数据用于回填。
   dialogMode.value = 'edit';
   editingModelConfigId.value = model.id;
   currentFormData.value = toFormData(model);
   dialogVisible.value = true;
 }
 
-/**
- * 根据当前弹窗模式处理子组件提交的表单数据。
- *
- * ModelConfigDialog 通过 submit emit 把表单结果交回父组件；
- * 父组件根据 dialogMode 决定调用新增或编辑 service。
- * 提交成功后关闭弹窗并重新加载列表，让当前表格与 mock service 数据源保持一致。
- *
- * @param data 新增或编辑弹窗提交的模型配置表单数据
- */
 async function handleSubmit(data: ModelConfigFormData) {
-  // 新增/编辑共用提交入口，通过 mode 决定调用 create 还是 update 的 mock CRUD 方法。
   if (dialogMode.value === 'create') {
     await createModelConfig(data);
-    ElMessage.success('新增模型配置成功');
+    ElMessage.success('新增前端 mock 模型配置成功');
   } else if (editingModelConfigId.value !== null) {
     await updateModelConfig(editingModelConfigId.value, data);
-    ElMessage.success('编辑模型配置成功');
+    ElMessage.success('编辑前端 mock 模型配置成功');
   }
 
   dialogVisible.value = false;
-  // CRUD 后重新读取 service 数据，确保搜索和供应商筛选基于最新列表计算。
   await loadModelConfigData();
 }
 
-/**
- * 删除一条模型配置数据。
- *
- * 用户点击表格行“删除”时调用；删除前先弹出确认框，
- * 是为了避免误删当前 mock 列表中的配置。确认后调用 service 删除，
- * 再重新加载列表，让搜索和供应商筛选基于最新数据继续生效。
- *
- * @param model 当前要删除的模型配置列表项
- */
 async function handleDelete(model: ModelConfigItem) {
   try {
-    // 删除前先让用户确认，避免误操作；当前删除只影响前端 mock 内存数据。
-    await ElMessageBox.confirm(`确认删除“${model.name}”吗？`, '删除模型配置', {
+    await ElMessageBox.confirm(`确认删除前端 mock 配置“${model.name}”吗？`, '删除 mock 模型配置', {
       confirmButtonText: '确认删除',
       cancelButtonText: '取消',
       type: 'warning',
     });
     await deleteModelConfig(model.id);
-    ElMessage.success('删除模型配置成功');
-    // 删除后刷新列表，保持表格、搜索、供应商筛选都读取最新数据。
+    ElMessage.success('删除前端 mock 模型配置成功');
     await loadModelConfigData();
   } catch {
     // 用户取消删除时不需要额外提示。
   }
 }
 
-/**
- * 切换模型配置启用状态。
- *
- * 用户切换表格中的开关时调用；当前阶段只是 mock 状态切换，
- * 只更新 enabled 字段和更新时间，不涉及真实模型连通性测试或模型 API 调用。
- * 切换完成后重新加载列表，让启用状态和更新时间保持最新。
- *
- * @param model 当前要切换状态的模型配置列表项
- * @param enabled 目标启用状态，true 表示启用，false 表示停用
- */
 async function handleToggleEnabled(model: ModelConfigItem, enabled: boolean) {
-  // 启用/停用只改变 enabled 状态，其他配置项保持不变。
   await toggleModelConfigEnabled(model.id, enabled);
-  ElMessage.success(enabled ? '已启用模型配置' : '已停用模型配置');
-  // toggle 后刷新列表，让更新时间和筛选结果都保持最新。
+  ElMessage.success(enabled ? '已启用前端 mock 配置' : '已停用前端 mock 配置');
   await loadModelConfigData();
 }
 
@@ -323,7 +323,10 @@ function handleSwitchChange(
   return handleToggleEnabled(model, Boolean(enabled));
 }
 
-onMounted(loadModelConfigData);
+onMounted(() => {
+  void loadBackendModelConfig();
+  void loadModelConfigData();
+});
 </script>
 
 <style scoped>
@@ -335,11 +338,93 @@ onMounted(loadModelConfigData);
   margin-bottom: 24px;
 }
 
-.model-config-header p {
+.model-config-header p,
+.backend-config-panel__header p,
+.mock-list-panel__header p {
   margin: 8px 0 0;
   color: #606266;
   font-size: 14px;
   line-height: 22px;
+}
+
+.backend-config-panel,
+.mock-list-panel {
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 20px;
+  background: #fff;
+}
+
+.backend-config-panel {
+  margin-bottom: 20px;
+}
+
+.backend-config-panel__header,
+.mock-list-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.backend-config-panel h2,
+.mock-list-panel h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #303133;
+}
+
+.backend-config-panel__error {
+  border: 1px solid #f5c2c7;
+  border-radius: 6px;
+  padding: 12px;
+  color: #b42318;
+  background: #fff1f3;
+}
+
+.backend-config-panel__empty {
+  color: #909399;
+}
+
+.status-line {
+  margin-bottom: 16px;
+  border-radius: 6px;
+  padding: 12px;
+  color: #9a3412;
+  background: #fff7ed;
+}
+
+.status-line--ready {
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.backend-config-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.backend-config-item {
+  min-height: 72px;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 12px;
+  background: #fafafa;
+}
+
+.backend-config-item span {
+  display: block;
+  margin-bottom: 8px;
+  color: #909399;
+  font-size: 13px;
+}
+
+.backend-config-item strong {
+  color: #303133;
+  font-size: 15px;
+  word-break: break-word;
 }
 
 .model-config-filters {
@@ -357,9 +442,21 @@ onMounted(loadModelConfigData);
   width: 200px;
 }
 
+@media (max-width: 960px) {
+  .backend-config-grid {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
-  .model-config-header {
+  .model-config-header,
+  .backend-config-panel__header,
+  .mock-list-panel__header {
     flex-direction: column;
+  }
+
+  .backend-config-grid {
+    grid-template-columns: 1fr;
   }
 
   .model-config-filters,

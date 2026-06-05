@@ -42,3 +42,15 @@
 6. auth / Workspace / 多租户。
 
 ModelConfig 后端化是后续增强，不排在 stream 前面。
+
+## Phase 2.8 轻量 ModelConfig 展示补充
+
+| 模块 | 阶段 | 文档 | 状态 |
+| --- | --- | --- | --- |
+| 模型配置 | Phase 2.8 轻量 ModelConfig 展示 | `model/phase-2-8-model-config-display.md` | 已实现 |
+
+- 已新增 `GET /api/v1/model-config`，用于展示后端可信 LLM 环境配置状态。
+- 接口只返回脱敏状态，不返回 `LLM_API_KEY`、Authorization 或 headers。
+- 前端模型配置页已展示 provider、model、baseUrlHost、enabled、apiKeyConfigured 和默认参数。
+- 当前仍不支持 API Key 输入、加密存储、多用户模型配置、ModelConfig CRUD 或多 provider 管理。
+- 前端 mock 模型列表仍只是展示用数据，不直接决定 ChatTest 真实调用模型。

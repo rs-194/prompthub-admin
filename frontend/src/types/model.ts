@@ -31,3 +31,14 @@ export type ModelConfigFormData = Pick<
 
 // 弹窗模式决定表单是新增默认值，还是编辑回填已有配置。
 export type ModelConfigDialogMode = 'create' | 'edit';
+
+export interface BackendModelConfigStatus {
+  provider: string;
+  model: string;
+  baseUrlHost: string;
+  enabled: boolean;
+  apiKeyConfigured: boolean;
+  temperature: number;
+  maxTokens: number;
+  timeoutSeconds: number;
+}
