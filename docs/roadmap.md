@@ -40,7 +40,8 @@
 - Phase 2.5：真实 fetch stream + StreamingResponse + NDJSON 输出。（已完成；不是原生 EventSource SSE）
 - Phase 2.6：测试记录详情 Drawer。（已完成）
 - Phase 2.7：双记录对比。（已完成；基于历史 TestRecord，不是多模型并发生成）
-- ModelConfig 后端化作为后续增强，不排在 stream 前面。
+- Phase 2.8：README 展示化与项目包装整理。（已完成；文档展示整理，不修改业务代码）
+- 后续建议顺序：轻量 ModelConfig 展示、Knowledge 后端化轻量版、记录详情 / 对比继续优化、failed / stopped record 保存策略、真实 RAG / embedding、auth / Workspace / 多租户。
 
 ## v0.8 登录与权限控制
 - 目标：完善后台访问控制能力。
@@ -50,4 +51,4 @@
 ## v0.9 README、截图、部署文档完善
 - 目标：完善项目展示与交付文档。
 - 计划内容：README 强化、页面截图、部署与运行说明。
-- 当前状态：计划中。
+- 当前状态：进行中（Phase 2.8 已完成 README 展示化与项目包装整理，新增 `docs/project-showcase.md` 用于项目投递、面试讲解和简历描述准备；真实截图、部署文档仍待补充）。

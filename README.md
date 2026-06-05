@@ -1,162 +1,191 @@
-﻿# PromptHub Admin
+# PromptHub Admin
+
+面向大模型应用开发的 AI Prompt 调试与记录管理平台。
 
 ## 项目简介
-PromptHub Admin 是一个基于 Vue3 + TypeScript + Vite + Element Plus 的 AI 提示词与知识库管理后台。
 
-本项目当前处于开发中，定位为个人学习、作品集展示与 AI 应用后台能力实践。当前以后台骨架和前端工程结构为主，业务功能仍在逐步实现。
+普通 AI 对话工具通常只能看到单次回答，很难系统记录一次 Prompt 调试中使用的 Prompt 模板、模型参数、知识库上下文和输出结果。PromptHub Admin 围绕 ChatTest 调试链路，提供真实 LLM 流式输出、测试记录持久化、详情复盘和双记录对比，帮助开发者把一次次 Prompt 调试沉淀为可追踪、可复盘的记录。
+
+当前项目适合作为前端实习 / AI 前端方向作品集项目展示：重点体现 Vue3 + TypeScript 前端工程能力、流式响应消费、前后端接口联调和 AI 调试业务链路设计。
+
+更完整的展示说明见 [docs/project-showcase.md](docs/project-showcase.md)。
+
+## 核心功能
+
+### ChatTest 调试台
+
+- Prompt / Model / Knowledge 配置源选择。
+- 参数配置：temperature / maxTokens / outputFormat。
+- 真实 LLM 流式输出。
+- fetch stream + NDJSON 逐段渲染。
+- AbortController 停止生成。
+- loading / error / result 状态处理。
+
+### TestRecord 测试记录
+
+- 后端持久化。
+- 列表分页 / keyword 查询。
+- 列表只展示 outputPreview。
+- 详情 Drawer 按需加载完整 output。
+- 双记录对比 Drawer。
+
+### 后端能力
+
+- FastAPI 后端。
+- TestRecord CRUD。
+- ChatTest run 非流式接口。
+- ChatTest stream 流式接口。
+- 后端 .env 读取 LLM 配置。
+- API Key 不进前端。
+
+### 工程化
+
+- Vue3 + TypeScript + Vite。
+- Element Plus。
+- 前端 service / types / components 分层。
+- FastAPI router / service / schema / model 分层。
+- Vite proxy。
+- request 封装。
+- 模块文档与开发日志。
 
 ## 技术栈
-- Vue 3
+
+### 前端
+
+- Vue3
 - TypeScript
 - Vite
 - Element Plus
+- Pinia
 - Vue Router
-- Pinia（已创建基础 store）
-- FastAPI（后端骨架、TestRecord 持久化和真实 LLM 非流式调用接口已建立）
-- SQLite + SQLAlchemy（当前仅完成基础连接配置）
-
-## 当前已完成内容
-- 前端基础布局
-- 路由结构整理
-- 侧边栏菜单配置
-- 页面骨架（Dashboard、提示词管理、知识库管理、模型配置、对话测试、系统设置；当前仅包含基础标题与页面容器）
-- Dashboard 首页 mock 数据看板（当前为 mock 数据，后端待接入）
-- 提示词管理列表展示、搜索、分类筛选与新增/编辑/删除 mock CRUD（当前为 mock 数据，刷新页面后不保证持久化，后端待接入）
-- 模型配置 mock 管理，支持模型配置列表、搜索、供应商筛选、新增/编辑/删除与启用/停用（当前为 mock 数据，后端待接入，不真实调用模型 API）
-- 对话测试 / Prompt 调试台已接入后端真实 LLM 调用，保留 `POST /api/v1/chat-test/run` 非流式接口，并新增 `POST /api/v1/chat-test/stream` 真实 fetch stream + StreamingResponse + NDJSON 流式输出；支持选择提示词模板、选择启用模型配置、选择启用中的知识库文档作为 mock context、设置 temperature / maxTokens / outputFormat 测试参数、逐段展示真实 output、使用 AbortController 停止生成，并在正常完成后使用后端返回的 record 更新最近测试记录；最近记录列表只展示 `outputPreview`，详情 Drawer 按需调用 `GET /api/v1/test-records/{id}` 查看完整 output 和调试上下文，并支持选择 2 条历史 TestRecord 做前端并排对比（Prompt / Model / Knowledge 仍是前端配置源；当前不是原生 EventSource SSE，不做真实 RAG；对比基于历史记录，不是多模型并发生成；用户主动停止时 v1 不保存 stopped 记录）
-- 知识库管理 v1 mock，支持知识库文档元数据列表、搜索、分类筛选、状态筛选、新增/编辑/删除、启用/停用、摘要与 mock 切片信息查看（当前为 mock 数据，后端待接入，不真实上传文件，不真实切片，不调用 embedding，不接向量数据库，不做真实 RAG）
-- 认证与路由访问控制 v1 mock，支持 `/login` 登录页、mock 账号登录、Pinia auth store、localStorage mock 登录态恢复、后台路由守卫、Header 用户展示与退出登录（当前为 mock 登录，后端待接入，不做真实 JWT 校验，不做 RBAC）
-- FastAPI 后端 Phase 2.1 最小骨架、Phase 2.2 TestRecord 持久化接口、Phase 2.3 真实 LLM 非流式调用接口、Phase 2.4 前端 ChatTest run 接入与 Phase 2.5 真实流式输出，包含 CORS、SQLite / SQLAlchemy 基础连接、`/api/v1` 路由入口、`GET /api/v1/health` 健康检查接口、测试记录 CRUD、`POST /api/v1/chat-test/run` 非流式调用，以及 `POST /api/v1/chat-test/stream` fetch stream + NDJSON 流式调用并在正常完成后保存 TestRecord（当前未实现真实 RAG / auth）
-- Element Plus 基础接入
-
-## 计划功能
-- Dashboard 真实接口数据看板
-- 提示词管理真实后端 CRUD 接口接入
-- 知识库管理真实后端接入、文件上传、文本切片、embedding、向量检索与 RAG 调试
-- 模型配置真实后端接口接入与真实模型调用能力
-- 对话测试 stream 错误恢复优化
-- FastAPI 后端接口：Prompt / Model / Knowledge 后端迁移、真实 RAG、真实接口联调
-- 登录与权限控制真实后端接入、真实 token 校验与权限能力
-- README、截图和部署说明完善
-
-## 本地启动方式
-### 前端
-
-1. 安装依赖
-```bash
-npm install
-```
-2. 启动开发环境
-```bash
-npm run dev
-```
-开发环境已配置 Vite proxy：前端请求 `/api/...` 会转发到 `http://127.0.0.1:8000`。如需绕过 dev proxy 直连其他后端地址，可在前端环境变量中配置 `VITE_API_BASE_URL`，但不要在前端配置 `LLM_API_KEY` 或真实模型服务 baseURL。
-
-3. 构建检查
-```bash
-npm run build
-```
+- fetch stream / ReadableStream
 
 ### 后端
 
-当前后端包含 Phase 2.1 骨架、Phase 2.2 TestRecord 持久化接口、Phase 2.3 真实 LLM 非流式调用接口和 Phase 2.5 真实 fetch stream 流式接口：
+- FastAPI
+- SQLAlchemy
+- SQLite
+- httpx
+- python-dotenv
+- StreamingResponse
+
+## 核心链路
+
+```text
+Prompt / 参数 / 知识库上下文
+→ 前端 ChatTest
+→ FastAPI /api/v1/chat-test/stream
+→ 后端代理 LLM API
+→ 前端流式渲染
+→ 后端保存 TestRecord
+→ 列表 / 详情 / 对比复盘
+```
+
+## 本地启动
+
+### 后端
 
 ```bash
 cd backend
-python -m pip install -r requirements.txt
 copy .env.example .env
+python -m pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 ```
 
-健康检查地址：
+复制 `backend/.env.example` 为 `backend/.env` 后，填写本地模型服务配置：
 
 ```text
-http://localhost:8000/api/v1/health
+LLM_BASE_URL=你的 OpenAI-compatible API 地址
+LLM_API_KEY=你的 API Key
+LLM_MODEL=你的模型名称
 ```
 
-测试记录接口：
+不要在 README、前端代码或提交记录中展示真实 API Key。
+
+后端健康检查：
 
 ```text
-GET /api/v1/test-records
-GET /api/v1/test-records/{id}
-POST /api/v1/test-records
-DELETE /api/v1/test-records/{id}
+http://127.0.0.1:8000/api/v1/health
 ```
 
-ChatTest 真实运行接口：
+### 前端
 
-```text
-POST /api/v1/chat-test/run
-POST /api/v1/chat-test/stream
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-LLM 环境变量：
+开发环境已配置 Vite proxy：前端请求 `/api/...` 会转发到 `http://127.0.0.1:8000`。
 
-```text
-LLM_BASE_URL
-LLM_API_KEY
-LLM_MODEL
-LLM_TEMPERATURE
-LLM_MAX_TOKENS
-LLM_TIMEOUT_SECONDS
-```
+## 环境变量说明
 
-说明：本地开发时可复制 `backend/.env.example` 为 `backend/.env`，再把真实 `LLM_API_KEY` 写入 `backend/.env`；后端启动时会自动读取 `backend/.env`，不是项目根目录 `.env`。`backend/.env` 和真实 API Key 不提交，`backend/.env.example` 可以提交；修改 `.env` 后需要重启 uvicorn。前端普通 JSON API 通过 `frontend/src/services/request.ts` 统一封装；`/chat-test/stream` 继续使用 fetch stream + FastAPI StreamingResponse + NDJSON，不是原生 EventSource SSE，也不改为普通请求封装；当前不是真实 RAG；`modelName` 当前只用于测试记录展示字段，真实调用使用后端 `LLM_MODEL`。
+| 变量 | 说明 |
+| --- | --- |
+| LLM_BASE_URL | OpenAI-compatible 模型服务地址 |
+| LLM_API_KEY | 模型服务 API Key，仅放在后端环境变量中 |
+| LLM_MODEL | 后端实际调用的模型名称 |
+| LLM_TEMPERATURE | 默认 temperature 配置 |
+| LLM_MAX_TOKENS | 默认 max tokens 配置 |
+| LLM_TIMEOUT_SECONDS | 后端调用模型服务的超时时间 |
 
-## 目录结构说明
-```text
-prompthub-admin/
-├─ backend/                      # FastAPI 后端骨架、TestRecord 持久化与真实 LLM 调用（Phase 2.1 / 2.2 / 2.3 / 2.5）
-│  ├─ app/
-│  │  ├─ api/v1/                 # v1 API 路由入口与 health check
-│  │  ├─ core/                   # 基础配置
-│  │  ├─ db/                     # SQLite / SQLAlchemy 基础连接
-│  │  ├─ modules/                # 后端业务模块（当前包含 test_records、llm_provider、chat_test）
-│  │  └─ main.py                 # FastAPI app 入口
-│  ├─ .env.example               # 后端 LLM 环境变量示例，可提交；真实 backend/.env 不提交
-│  ├─ requirements.txt
-│  └─ README.md
-├─ frontend/                     # 前端工程
-│  ├─ src/
-│  │  ├─ layout/                 # 后台布局与布局子组件
-│  │  ├─ views/                  # 页面视图（当前多为骨架页）
-│  │  ├─ components/             # 全局组件
-│  │  ├─ router/                 # 路由配置
-│  │  ├─ config/                 # 配置（如菜单）
-│  │  ├─ stores/                 # 状态管理
-│  │  ├─ styles/                 # 全局样式
-│  │  ├─ types/                  # 类型声明
-│  │  ├─ services/               # 服务层（当前包含 mock service，后端接入后逐步替换）
-│  │  ├─ App.vue
-│  │  └─ main.ts
-│  └─ ...
-├─ docs/                         # 项目文档
-├─ README.md
-└─ AGENTS.md
-```
+说明：
 
-## 文档与学习笔记
-- `docs/` 存放项目公开文档，包括项目说明、架构、路线和开发记录。
-- `notes/` 存放个人学习笔记与面试复习内容，用于辅助理解项目代码。
-- `notes/` 是否随项目公开，可根据实际需要决定。
+- `backend/.env` 不提交。
+- `backend/.env.example` 可以提交。
+- 修改 `.env` 后需要重启后端。
+- 前端不保存、不展示、不透传真实 `LLM_API_KEY`。
 
-## 开发规范
-- 保持小步迭代：每次只完成一个小任务。
-- 不夸大完成度：未实现功能必须标注为计划中。
-- 业务逻辑与页面展示分层，避免把复杂逻辑直接堆在页面文件。
-- 使用 TypeScript 类型约束，避免滥用 `any`。
-- 文档与代码同步更新，至少维护开发日志。
+## 当前完成度
 
-## 项目状态说明
-- 当前状态：开发中（前端部分 mock + 后端真实 run / stream 接口接入阶段）
-- 页面状态：部分页面为骨架页面，业务功能待实现
-- 数据状态：Prompt / Model / Knowledge 等前端业务数据仍为 mock；ChatTest 运行已接入后端真实 LLM run / stream 接口，并使用后端返回的 record 更新最近测试记录；TestRecord 双记录对比基于已有历史记录，不新增后端 compareGroup 表
-- 后端状态：FastAPI 最小骨架、TestRecord CRUD、ChatTest 真实 LLM 非流式调用接口与真实 fetch stream 流式接口已建立；真实 RAG、真实认证仍待实现
-- 项目容器化：计划中，后续考虑补充 Dockerfile 与 docker-compose 配置
+| 能力 | 状态 | 说明 |
+| --- | --- | --- |
+| ChatTest 真实流式输出 | 已完成 | fetch stream + NDJSON |
+| TestRecord 持久化 | 已完成 | FastAPI + SQLite |
+| 详情 Drawer | 已完成 | 按需加载完整 output |
+| 双记录对比 | 已完成 | 基于历史 TestRecord |
+| 真实 RAG | 未完成 | 后续计划 |
+| ModelConfig 后端化 | 未完成 | 后续计划 |
+| auth / RBAC | 未完成 | 后续计划 |
 
-## 当前限制
-- 当前页面以骨架和布局为主，暂未实现完整业务交互。
-- 当前 Prompt / Model / Knowledge 等业务数据仍未接入真实后端业务接口；ChatTest run / stream 已接入后端真实 LLM 接口。
-- 当前仅支持 mock 登录与前端路由守卫，暂无真实后端鉴权、RBAC 和接口鉴权。
-- 当前后端已实现真实 LLM 非流式调用和真实 fetch stream 流式输出；当前 TestRecord 对比是前端基于历史记录分别读取详情后展示，不是多模型并发生成或多路 stream；当前未实现真实 RAG 或真实认证；Prompt / Model / Knowledge 模块仍未迁移到后端。
-- 当前暂未接入 Docker 部署流程。
+## 项目边界
+
+- Prompt / Model / Knowledge 当前仍未全部后端化，仍作为前端配置源参与 ChatTest。
+- knowledgeContext 当前是手动上下文，不是真实 RAG，不做 embedding、向量检索或召回排序。
+- 双记录对比基于历史 TestRecord，不是多模型并发生成，不做多路 stream，也不新增 compareGroup 后端表。
+- API Key 当前由后端环境变量托管，不做前端密文存储。
+- 当前不是完整企业级多租户系统，不包含真实 JWT / RBAC / Workspace。
+
+## 后续规划
+
+1. 轻量 ModelConfig 展示。
+2. Knowledge 后端化轻量版。
+3. 记录详情 / 对比继续优化。
+4. failed / stopped record 保存策略。
+5. 真实 RAG / embedding。
+6. auth / Workspace / 多租户。
+
+## 简历项目描述参考
+
+### 当前版本
+
+- 基于 Vue3 + TypeScript + Element Plus 实现 AI Prompt 调试台，支持 Prompt、模型参数与知识库上下文选择。
+- 通过 fetch stream + ReadableStream 消费 FastAPI 返回的 NDJSON 流式响应，实现模型输出逐段渲染和 AbortController 停止生成。
+- 设计 TestRecord 测试记录链路，支持后端持久化、列表 outputPreview 展示、详情 Drawer 按需加载完整 output。
+- 实现基于历史 TestRecord 的双记录对比 Drawer，支持并排复盘两次 Prompt 调试的输入、参数、上下文和完整输出。
+- 将真实 API Key 托管在后端 `.env` / 环境变量中，前端只通过 `/api` 代理调用后端接口。
+- 按 service / types / components 拆分前端模块，配套维护模块文档、路线图和开发日志。
+
+### 后续增强版
+
+- 在现有 ChatTest 流式调试和 TestRecord 复盘链路基础上，进一步接入 ModelConfig / Knowledge 后端化能力。
+- 支持从后端读取模型配置与知识库上下文，形成 Prompt 调试、参数管理、知识上下文管理和测试记录复盘的一体化链路。
+- 在保持 API Key 后端托管的前提下，扩展模型配置管理、知识库轻量持久化和后续 RAG 检索能力。
+
+## 文档入口
+
+- [前端架构说明](docs/frontend-architecture.md)
+- [模块设计文档索引](docs/modules/README.md)
+- [路线图](docs/roadmap.md)
+- [开发记录](docs/development-log.md)
+- [项目展示说明](docs/project-showcase.md)

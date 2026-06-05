@@ -616,3 +616,24 @@
 - `cd frontend && npm run build`
 - 人工验证路径：启动后端和前端，访问 `/chat-test`，确保已有至少 2 条 TestRecord，在最近测试记录中选择 2 条并点击“对比选中记录”，确认 Compare Drawer 展示完整 output、userInput、params、knowledgeTitles、durationMs 和 createdAt
 - 交互验证路径：只选 0 或 1 条时对比按钮禁用；尝试选择第 3 条时被限制；关闭 Compare Drawer 后仍可继续 stream 测试；单条详情 Drawer 仍可正常使用
+
+### 2026-06-05：Phase 2.8 README 展示化与项目包装整理
+
+内容：
+- 重写 README 主结构，明确项目定位为“面向大模型应用开发的 AI Prompt 调试与记录管理平台”
+- 聚焦 ChatTest 真实流式输出、TestRecord 持久化、详情 Drawer 和双记录对比等当前真实完成链路
+- 新增 `docs/project-showcase.md`，整理项目展示故事、截图占位、简历 bullet、当前边界和后续规划
+- 同步 `docs/modules/README.md` 与 `docs/roadmap.md`，补充 Phase 2.8 文档展示整理状态
+- 明确真实 RAG、ModelConfig 后端化、Prompt / Model / Knowledge 后端化、auth / RBAC、多租户、compareGroup 后端表等能力仍未完成
+- 本阶段只修改文档，不修改业务代码
+
+影响范围：
+- README.md
+- docs/project-showcase.md
+- docs/modules/README.md
+- docs/roadmap.md
+- docs/development-log.md
+
+验证方式：
+- `git diff --check`
+- 未执行 `npm run build`，本次不修改代码
