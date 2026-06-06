@@ -10,7 +10,6 @@ import TestResultPanel from './components/TestResultPanel.vue';
 import {
   buildParamsSummary,
   getChatTestApiErrorMessage,
-  getChatTestKnowledgeOptions,
   getChatTestModelOptions,
   getChatTestPromptOptions,
   getChatTestRecords,
@@ -19,8 +18,12 @@ import {
   mapTestRecordDetailToRecord,
   runPromptTestStreamApi,
 } from '@/services/chatTest';
+import {
+  getKnowledgeDocumentDetail,
+  getKnowledgeDocumentList,
+  KnowledgeApiError,
+} from '@/services/knowledge';
 import type {
-  ChatTestKnowledgeOption,
   ChatTestModelOption,
   ChatTestParams,
   ChatTestPromptOption,
@@ -29,10 +32,21 @@ import type {
   ChatTestResult,
   TestRecordDetail,
 } from '@/types/chatTest';
+import type {
+  KnowledgeDocumentDetail,
+  KnowledgeDocumentListItem,
+} from '@/types/knowledge';
 
 const promptOptions = ref<ChatTestPromptOption[]>([]);
 const modelOptions = ref<ChatTestModelOption[]>([]);
-const knowledgeOptions = ref<ChatTestKnowledgeOption[]>([]);
+const knowledgeOptions = ref<KnowledgeDocumentListItem[]>([]);
+const knowledgeDetailCache = ref<Record<number, KnowledgeDocumentDetail>>({});
+const knowledgeLoadingIds = ref<number[]>([]);
+const knowledgeError = ref('');
+const knowledgeDetailRequests = new Map<
+  number,
+  Promise<KnowledgeDocumentDetail>
+>();
 const selectedPromptId = ref<number | undefined>();
 const selectedModelId = ref<number | undefined>();
 const selectedKnowledgeIds = ref<number[]>([]);
@@ -71,12 +85,7 @@ const selectedModel = computed(() =>
 );
 
 /**
- * 根据知识库选项和用户选择的 id 推导已选文档。
- *
- * 用户修改知识库多选框时自动重新计算，返回值用于 mock context 预览和运行测试入参。
- * 当前不是 RAG，也不做额外同步副作用；后续真实 RAG 接入时仍应优先由 service 替换上下文构建逻辑。
- *
- * @returns 当前用户手动选择的知识库 mock 文档
+ * 根据后端知识库列表和用户选择的 id 推导已选文档。
  */
 const selectedKnowledgeDocs = computed(() =>
   knowledgeOptions.value.filter((document) =>
@@ -90,72 +99,71 @@ const canRunTest = computed(
     Boolean(selectedModel.value) &&
     userInput.value.trim().length > 0 &&
     !loading.value &&
-    !streaming.value,
+    !streaming.value &&
+    knowledgeLoadingIds.value.length === 0,
 );
 
 /**
  * 加载 Prompt 调试台初始数据。
  *
- * 页面挂载时调用，负责获取提示词选项、已启用模型配置、已启用知识库文档选项和最近测试记录。
- * 当前数据来自前端 mock service，不接后端；知识库选项只是 mock context 来源，不是真实 RAG。
- *
- * @returns 加载完成后的空结果
+ * Prompt / Model 保持现有配置源，Knowledge 列表来自后端 enabled 文档。
  */
 async function loadInitialData() {
   errorMessage.value = '';
+  knowledgeError.value = '';
 
   try {
-    const [prompts, models, knowledgeDocuments, records] = await Promise.all([
+    const [prompts, models, knowledgeResponse, records] = await Promise.all([
       getChatTestPromptOptions(),
       getChatTestModelOptions(),
-      getChatTestKnowledgeOptions(),
+      getKnowledgeDocumentList({
+        page: 1,
+        pageSize: 100,
+        enabled: true,
+      }),
       getChatTestRecords(),
     ]);
 
     promptOptions.value = prompts;
     modelOptions.value = models;
-    knowledgeOptions.value = knowledgeDocuments;
+    knowledgeOptions.value = knowledgeResponse.items;
     testRecords.value = records;
-  } catch {
+  } catch (error) {
+    if (error instanceof KnowledgeApiError) {
+      knowledgeError.value = error.message;
+    }
     errorMessage.value = '调试台初始化失败，请稍后重试';
   }
 }
 
 /**
- * 从已选知识库文档生成简短 mock context 预览。
- *
- * 运行测试前调用，参数是用户手动选择的知识库文档；返回值只拼接 title、sourceName、summary 和 tags
- * 等 mock 元数据。当前不是 RAG，不包含真实检索片段、embedding 或向量库结果；后续真实 RAG 接入时，
- * 优先替换 service 内部上下文组装和模型调用逻辑。
- *
- * @param documents 用户手动选择的知识库 mock 文档
- * @returns 用于结果展示和测试记录保存的 mock context 预览
+ * 将手动选择的后端文档正文拼成现有 knowledgeContext.content。
+ * 后端 messages 构造阶段仍会应用既有长度截断保护。
  */
-function buildKnowledgeContextPreview(documents: ChatTestKnowledgeOption[]) {
+function buildKnowledgeContextPreview(documents: KnowledgeDocumentDetail[]) {
   if (documents.length === 0) {
     return '';
   }
 
   return documents
     .map((document, index) => {
-      const tagsText = document.tags.length > 0 ? document.tags.join('、') : '无';
-
       return [
-        `${index + 1}. ${document.title}`,
-        `来源：${document.sourceName}`,
-        `摘要：${document.summary}`,
-        `标签：${tagsText}`,
+        `【文档 ${index + 1}：${document.title}】`,
+        document.content || document.summary || '',
       ].join('\n');
     })
     .join('\n\n');
 }
 
-function buildRunRequest(contextPreview: string): ChatTestRunRequest | null {
+function buildRunRequest(
+  contextPreview: string,
+  knowledgeDetails: KnowledgeDocumentDetail[],
+): ChatTestRunRequest | null {
   if (!selectedPrompt.value || !selectedModel.value) {
     return null;
   }
 
-  const knowledgeTitles = selectedKnowledgeDocs.value.map((document) => document.title);
+  const knowledgeTitles = knowledgeDetails.map((document) => document.title);
 
   return {
     promptTitle: selectedPrompt.value.title,
@@ -168,6 +176,62 @@ function buildRunRequest(contextPreview: string): ChatTestRunRequest | null {
     },
     params: { ...testParams.value },
   };
+}
+
+async function loadKnowledgeDetail(documentId: number) {
+  const cachedDetail = knowledgeDetailCache.value[documentId];
+  if (cachedDetail) {
+    return cachedDetail;
+  }
+
+  const activeRequest = knowledgeDetailRequests.get(documentId);
+  if (activeRequest) {
+    return activeRequest;
+  }
+
+  knowledgeLoadingIds.value = [...knowledgeLoadingIds.value, documentId];
+  knowledgeError.value = '';
+
+  const requestPromise = getKnowledgeDocumentDetail(documentId)
+    .then((detail) => {
+      knowledgeDetailCache.value = {
+        ...knowledgeDetailCache.value,
+        [documentId]: detail,
+      };
+      return detail;
+    })
+    .catch((error: unknown) => {
+      knowledgeError.value =
+        error instanceof KnowledgeApiError
+          ? error.message
+          : '知识库文档详情加载失败，请稍后重试';
+      throw error;
+    })
+    .finally(() => {
+      knowledgeDetailRequests.delete(documentId);
+      knowledgeLoadingIds.value = knowledgeLoadingIds.value.filter(
+        (id) => id !== documentId,
+      );
+    });
+
+  knowledgeDetailRequests.set(documentId, requestPromise);
+  return requestPromise;
+}
+
+async function ensureSelectedKnowledgeDetails() {
+  return Promise.all(
+    selectedKnowledgeIds.value.map((documentId) =>
+      loadKnowledgeDetail(documentId),
+    ),
+  );
+}
+
+function handleKnowledgeSelectionChange(documentIds: number[]) {
+  for (const documentId of documentIds) {
+    if (!knowledgeDetailCache.value[documentId]) {
+      void loadKnowledgeDetail(documentId).catch(() => undefined);
+    }
+  }
 }
 
 function buildResultFromResponse(
@@ -214,7 +278,7 @@ function isAbortError(error: unknown) {
  * 运行一次真实 LLM 流式 Prompt 测试。
  *
  * 用户点击“运行测试”时调用，负责校验 prompt / model / userInput，组装当前前端配置源里的
- * prompt、modelName、手动选择的知识库 mock context 和测试参数，再调用后端 `/api/v1/chat-test/stream`。
+ * prompt、modelName、手动选择的后端知识库正文和测试参数，再调用后端 `/api/v1/chat-test/stream`。
  * Phase 2.5 使用 fetch stream + NDJSON，不是原生 EventSource SSE；成功完成后由后端保存 TestRecord。
  *
  * @returns 调用完成后的空结果
@@ -229,9 +293,18 @@ async function handleRunTest() {
     return;
   }
 
+  let knowledgeDetails: KnowledgeDocumentDetail[];
+
+  try {
+    knowledgeDetails = await ensureSelectedKnowledgeDetails();
+  } catch {
+    errorMessage.value = knowledgeError.value || '知识库文档加载失败，请稍后重试';
+    return;
+  }
+
   clearResultState();
-  const contextPreview = buildKnowledgeContextPreview(selectedKnowledgeDocs.value);
-  const requestPayload = buildRunRequest(contextPreview);
+  const contextPreview = buildKnowledgeContextPreview(knowledgeDetails);
+  const requestPayload = buildRunRequest(contextPreview, knowledgeDetails);
 
   if (!requestPayload) {
     errorMessage.value = '请先选择提示词和模型配置';
@@ -431,7 +504,7 @@ onBeforeUnmount(() => {
       <div>
         <h1>对话测试 / Prompt 调试台</h1>
         <p>
-          用于验证提示词模板、模型配置、知识库 mock context 与测试参数的组合效果。当前已接入后端真实 fetch stream 流式输出，不是原生 EventSource SSE，不做真实 RAG。
+          用于验证提示词模板、模型配置、手动选择的后端知识库上下文与测试参数组合。当前已接入真实 fetch stream 流式输出，但不是 RAG，不做 embedding、向量检索或自动召回。
         </p>
       </div>
       <el-tag type="success" effect="plain">真实流式</el-tag>
@@ -493,6 +566,7 @@ onBeforeUnmount(() => {
                 collapse-tags-tooltip
                 class="full-width"
                 :disabled="knowledgeOptions.length === 0"
+                @change="handleKnowledgeSelectionChange"
               >
                 <el-option
                   v-for="document in knowledgeOptions"
@@ -501,11 +575,14 @@ onBeforeUnmount(() => {
                   :value="document.id"
                 >
                   <span>{{ document.title }}</span>
-                  <span class="option-meta">{{ document.categoryLabel }}</span>
+                  <span class="option-meta">{{ document.sourceName || '手工录入' }}</span>
                 </el-option>
               </el-select>
               <div v-if="knowledgeOptions.length === 0" class="form-tip">
                 暂无启用中的知识库文档，不影响基础 Prompt 测试。
+              </div>
+              <div v-if="knowledgeError" class="form-error">
+                {{ knowledgeError }}
               </div>
             </el-form-item>
 
@@ -552,7 +629,12 @@ onBeforeUnmount(() => {
 
         <TestParameterPanel v-model="testParams" />
 
-        <KnowledgeContextPanel :documents="selectedKnowledgeDocs" />
+        <KnowledgeContextPanel
+          :documents="selectedKnowledgeDocs"
+          :details="Object.values(knowledgeDetailCache)"
+          :loading-ids="knowledgeLoadingIds"
+          :error-message="knowledgeError"
+        />
 
         <el-card shadow="never">
           <template #header>
@@ -661,6 +743,12 @@ onBeforeUnmount(() => {
   color: #909399;
   font-size: 12px;
   line-height: 1.5;
+}
+
+.form-error {
+  margin-top: 8px;
+  color: #f56c6c;
+  font-size: 12px;
 }
 
 .actions {

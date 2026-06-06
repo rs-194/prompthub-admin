@@ -23,17 +23,17 @@
 ## v0.5 对话测试
 - 目标：提供后台内的模型对话测试能力。
 - 计划内容：测试输入区、历史记录、基础参数控制。
-- 当前状态：进行中（已完成对话测试 / Prompt 调试台 v3 mock 基础能力；Phase 2.4 已将前端运行测试默认路径接入 `POST /api/v1/chat-test/run`；Phase 2.5 已新增 `POST /api/v1/chat-test/stream` 并将前端默认运行路径切换为 fetch stream + NDJSON 真实流式输出，支持逐段展示和 AbortController 停止生成；Phase 2.6 已完成 TestRecord 详情 Drawer，列表只展示 `outputPreview`，完整 output 通过 `GET /api/v1/test-records/{id}` 按需加载；Phase 2.7 已完成基于历史 TestRecord 的双记录前端对比，可选择 2 条记录并排查看模型、参数、知识库上下文、耗时、用户输入和完整 output；Prompt / Model / Knowledge 仍是前端配置源；当前不是原生 EventSource SSE，不做多模型并发生成，不做多路 stream，不做真实 RAG，用户主动停止时 v1 不保存 stopped 记录）。
+- 当前状态：进行中（已完成对话测试 / Prompt 调试台 v3 基础能力；Phase 2.4 已接入真实 run；Phase 2.5 已接入 fetch stream + NDJSON；Phase 2.6 已完成 TestRecord 详情 Drawer；Phase 2.7 已完成历史双记录对比；Phase 2.9 已将 Knowledge 上下文来源切换为启用中的后端文档，按需加载并缓存完整正文后手动拼入 `knowledgeContext`；Prompt / Model 仍是现有配置源；当前不是原生 EventSource SSE，不做多模型并发生成、不做真实 RAG，用户主动停止时 v1 不保存 stopped 记录）。
 
 ## v0.6 知识库管理
 - 目标：提供知识条目管理与检索基础能力。
 - 计划内容：知识列表、基础增删改、后续检索能力对接。
-- 当前状态：进行中（已完成知识库管理 v1 mock，支持文档元数据列表、搜索、分类筛选、状态筛选、新增/编辑/删除、启用/停用、摘要与 mock 切片信息查看；当前为 mock 数据，后端待接入，不真实上传文件，不真实切片，不调用 embedding，不接向量数据库，不做真实 RAG 检索；后续检索能力仍待对接）。
+- 当前状态：进行中（Phase 2.9 已完成 Knowledge 后端化轻量版，支持 SQLite 持久化、分页、keyword、enabled 筛选、创建/编辑/删除、启用/停用和详情正文按需加载；ChatTest 可手动选择启用中的后端文档作为上下文；当前不上传文件、不自动解析、不调用 embedding、不接向量数据库、不做真实 RAG 检索）。
 
 ## v0.7 FastAPI 后端接入
 - 目标：完成前后端基础联调。
 - 计划内容：接口规范、后端项目骨架、TestRecord 持久化、ChatTest mock stream、后续鉴权基础与关键模块 API 对接。
-- 当前状态：进行中（Phase 2.1 FastAPI 后端最小骨架已完成；Phase 2.2 已新增 TestRecord 持久化 CRUD 接口，支持创建、分页列表、详情、删除和 keyword 轻量查询；Phase 2.3 已新增 `POST /api/v1/chat-test/run`，支持真实 LLM 非流式调用并保存 TestRecord；Phase 2.4 已完成前端 ChatTest 接入该 run 接口；Phase 2.5 已新增真实 fetch stream + StreamingResponse + NDJSON 输出接口并完成前端流式消费；Phase 2.7 的双记录对比复用 `GET /api/v1/test-records/{id}`，不新增后端 compareGroup 表；当前尚未实现真实 RAG、真实认证 / JWT / RBAC，也未迁移 Prompt / Model / Knowledge 后端表）。
+- 当前状态：进行中（Phase 2.1 FastAPI 骨架、Phase 2.2 TestRecord CRUD、Phase 2.3 非流式 run、Phase 2.4 前端接入、Phase 2.5 fetch stream、Phase 2.7 历史双记录对比均已完成；Phase 2.9 已新增 KnowledgeDocument 表与 CRUD，并完成 Knowledge 页面和 ChatTest 手动上下文接入；当前尚未实现真实 RAG、真实认证 / JWT / RBAC，Prompt / Model 仍未完成完整后端 CRUD）。
 
 ## Phase 2 后续顺序
 - Phase 2.4：前端 ChatTest 接入 `/api/v1/chat-test/run`，展示真实 output，并使用后端返回的 record 更新最近测试记录。（已完成）
@@ -42,7 +42,8 @@
 - Phase 2.7：双记录对比。（已完成；基于历史 TestRecord，不是多模型并发生成）
 - Phase 2.8：README 展示化与项目包装整理。（已完成；文档展示整理，不修改业务代码）
 - Phase 2.8：轻量 ModelConfig 展示。（已完成；读取后端可信 LLM 配置状态，不返回 API Key，不做 CRUD）
-- 后续建议顺序：Knowledge 后端化轻量版、记录详情 / 对比继续优化、failed / stopped record 保存策略、真实 RAG / embedding、auth / Workspace / 多租户。
+- Phase 2.9：Knowledge 后端化轻量版。（已完成；后端 CRUD + ChatTest 手动选择上下文，不是 RAG）
+- 后续建议顺序：记录详情 / 对比继续优化、failed / stopped record 保存策略、简单关键词检索或 RAG 方案设计、auth / Workspace / 多租户。
 
 ## v0.8 登录与权限控制
 - 目标：完善后台访问控制能力。

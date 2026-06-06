@@ -19,13 +19,16 @@
 - 使用 `httpx` 调 OpenAI-compatible `/chat/completions`
 - 非流式成功调用后保存 TestRecord，并返回 `output`、`record`、`durationMs`
 - 流式正常完成后保存 TestRecord，并通过 `done` 行返回 `record`、`durationMs`
+- KnowledgeDocument SQLAlchemy model 与 CRUD
+- Knowledge 列表只返回 `contentPreview`，详情返回完整 `content`
+- ChatTest 可接收前端手动选择的后端 Knowledge 文档正文
 
 ## 当前未完成
 
 - 原生 EventSource SSE
 - 真实 RAG / embedding / 向量数据库
 - 真实认证 / JWT / RBAC
-- Prompt / Model / Knowledge 后端表
+- Prompt / Model 完整后端 CRUD
 - ModelConfig 后端化
 - Alembic 数据库迁移
 
@@ -112,7 +115,7 @@ POST /api/v1/chat-test/run
 说明：
 
 - `modelName` 当前只用于 TestRecord 展示字段，真实调用使用后端 `LLM_MODEL`。
-- `knowledgeContext` 当前只是前端传入上下文，不是真实 RAG。
+- `knowledgeContext` 当前由前端手动选择后端 Knowledge 文档后传入，不是真实 RAG。
 - 当前不是 stream，接口会在真实模型完整返回后一次性响应；该接口仍保留作为 fallback 或调试接口。
 
 ## ChatTest 流式接口
@@ -139,7 +142,7 @@ POST /api/v1/chat-test/stream
 - 正常完成后由后端保存 `success` TestRecord。
 - 用户主动停止时，Phase 2.5 v1 不保存 `stopped` TestRecord。
 - API Key 只在后端读取，不进入前端、不进入响应、不写入日志。
-- 当前不是真实 RAG，`knowledgeContext` 仍是前端传入的 mock context。
+- 当前不是真实 RAG，`knowledgeContext` 是用户手动选择的后端文档上下文。
 
 ## TestRecord 接口
 
@@ -187,3 +190,23 @@ GET /api/v1/model-config
 - 不返回 Authorization、headers 或完整敏感请求信息。
 - 配置缺失时接口仍返回 200，并通过 `enabled=false` 表示 ChatTest 真实调用不可用。
 - 当前不支持 API Key 输入、加密存储、用户级模型配置、ModelConfig CRUD 或多 provider 管理。
+
+## KnowledgeDocument 接口
+
+```text
+GET    /api/v1/knowledge-documents
+GET    /api/v1/knowledge-documents/{id}
+POST   /api/v1/knowledge-documents
+PUT    /api/v1/knowledge-documents/{id}
+DELETE /api/v1/knowledge-documents/{id}
+```
+
+说明：
+
+- 列表支持 `page`、`pageSize`、`keyword` 和 `enabled`。
+- keyword 可匹配标题、摘要、来源名称和完整正文，但列表响应不会返回完整 `content`。
+- 列表只返回 `contentPreview`，详情接口返回完整 `content`。
+- tags 内部使用 JSON 字符串存储，对外返回 `string[]`；解析失败时兜底为空数组。
+- ChatTest 由用户手动选择启用文档并拼接上下文，不是 RAG。
+- 当前不做 embedding、向量数据库、文件上传、文档解析或联网搜索。
+- 开发期使用 `create_all` 建表，不引入 Alembic。

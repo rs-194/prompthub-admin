@@ -8,6 +8,7 @@
 | 对话测试 / Prompt 调试台 | v2 knowledge-context mock | `chat-test/v2-knowledge-context-mock.md` | 已实现 |
 | 对话测试 / Prompt 调试台 | v3 params-and-mock-streaming | `chat-test/v3-params-and-mock-streaming.md` | 已实现 |
 | 知识库管理 | v1 mock | `knowledge/v1-mock-design.md` | 已实现 |
+| 知识库管理 | Phase 2.9 backend lite | `knowledge/phase-2-9-knowledge-backend-lite.md` | 已实现 |
 | 认证与路由访问控制 | v1 mock | `auth/v1-mock-design.md` | 已实现 |
 | FastAPI 后端 | Phase 2.1 backend skeleton | `backend/v1-backend-skeleton.md` | 已实现 |
 | FastAPI 后端 | Phase 2.2 TestRecord 持久化 | `backend/v2-test-records.md` | 已实现 |
@@ -28,18 +29,17 @@
 - Phase 2.6 已完成 TestRecord 详情 Drawer，列表只展示 `outputPreview`，完整 output 通过详情接口按需加载。
 - Phase 2.7 已完成基于历史 TestRecord 的双记录对比，前端选择 2 条记录后分别调用 `GET /api/v1/test-records/{id}` 获取完整详情并并排展示；本阶段不是多模型并发生成，不新增 compareGroup 后端表，也不做多路 stream。
 - Phase 2.8 已完成 README 展示化与项目包装整理，新增项目展示说明，用于项目投递、面试讲解和后续简历描述准备；本阶段只修改文档，不修改业务代码。
-- Prompt / Model / Knowledge 仍未全部后端化，当前仍是前端配置源。
-- 当前未实现真实 RAG、真实认证 / JWT / RBAC，也未迁移 Prompt / Model / Knowledge 后端表。
+- Phase 2.9 已完成 Knowledge 后端化轻量版，提供文档 CRUD、分页、keyword、enabled 筛选和 ChatTest 手动上下文选择。
+- Prompt / Model 仍未全部后端化；Knowledge 已迁移到后端持久化数据源。
+- 当前未实现真实 RAG、embedding、向量数据库、文件上传、真实认证 / JWT / RBAC。
 - 当前 SQLite + `create_all` 是开发期方案，后续正式阶段可引入 Alembic。
 
 后续阶段顺序：
 
-1. 轻量 ModelConfig 展示。
-2. Knowledge 后端化轻量版。
-3. 记录详情 / 对比继续优化。
-4. failed / stopped record 持久化与 stream 错误恢复。
-5. 真实 RAG / embedding。
-6. auth / Workspace / 多租户。
+1. 记录详情 / 对比继续优化。
+2. failed / stopped record 持久化与 stream 错误恢复。
+3. 简单关键词检索或真实 RAG / embedding 方案设计。
+4. auth / Workspace / 多租户。
 
 ModelConfig 后端化是后续增强，不排在 stream 前面。
 

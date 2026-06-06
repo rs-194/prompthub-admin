@@ -144,26 +144,25 @@ npm run dev
 | TestRecord 持久化 | 已完成 | FastAPI + SQLite |
 | 详情 Drawer | 已完成 | 按需加载完整 output |
 | 双记录对比 | 已完成 | 基于历史 TestRecord |
+| Knowledge 后端化轻量版 | 已完成 | 文档 CRUD + ChatTest 手动上下文 |
 | 真实 RAG | 未完成 | 后续计划 |
-| ModelConfig 后端化 | 未完成 | 后续计划 |
+| ModelConfig 状态展示 | 已完成 | 只读脱敏状态，不做 CRUD |
 | auth / RBAC | 未完成 | 后续计划 |
 
 ## 项目边界
 
-- Prompt / Model / Knowledge 当前仍未全部后端化，仍作为前端配置源参与 ChatTest。
-- knowledgeContext 当前是手动上下文，不是真实 RAG，不做 embedding、向量检索或召回排序。
+- Prompt / Model 当前仍未完成完整后端 CRUD；Knowledge 已使用后端持久化文档。
+- knowledgeContext 来自用户手动选择的后端文档，不是真实 RAG，不做 embedding、向量检索、自动召回或排序。
 - 双记录对比基于历史 TestRecord，不是多模型并发生成，不做多路 stream，也不新增 compareGroup 后端表。
 - API Key 当前由后端环境变量托管，不做前端密文存储。
 - 当前不是完整企业级多租户系统，不包含真实 JWT / RBAC / Workspace。
 
 ## 后续规划
 
-1. 轻量 ModelConfig 展示。
-2. Knowledge 后端化轻量版。
-3. 记录详情 / 对比继续优化。
-4. failed / stopped record 保存策略。
-5. 真实 RAG / embedding。
-6. auth / Workspace / 多租户。
+1. 记录详情 / 对比继续优化。
+2. failed / stopped record 保存策略。
+3. 简单关键词检索或真实 RAG / embedding 方案设计。
+4. auth / Workspace / 多租户。
 
 ## 简历项目描述参考
 
@@ -173,14 +172,14 @@ npm run dev
 - 通过 fetch stream + ReadableStream 消费 FastAPI 返回的 NDJSON 流式响应，实现模型输出逐段渲染和 AbortController 停止生成。
 - 设计 TestRecord 测试记录链路，支持后端持久化、列表 outputPreview 展示、详情 Drawer 按需加载完整 output。
 - 实现基于历史 TestRecord 的双记录对比 Drawer，支持并排复盘两次 Prompt 调试的输入、参数、上下文和完整输出。
+- 实现 Knowledge 文档后端 CRUD，并让 ChatTest 手动选择启用文档作为模型上下文。
 - 将真实 API Key 托管在后端 `.env` / 环境变量中，前端只通过 `/api` 代理调用后端接口。
 - 按 service / types / components 拆分前端模块，配套维护模块文档、路线图和开发日志。
 
 ### 后续增强版
 
-- 在现有 ChatTest 流式调试和 TestRecord 复盘链路基础上，进一步接入 ModelConfig / Knowledge 后端化能力。
-- 支持从后端读取模型配置与知识库上下文，形成 Prompt 调试、参数管理、知识上下文管理和测试记录复盘的一体化链路。
-- 在保持 API Key 后端托管的前提下，扩展模型配置管理、知识库轻量持久化和后续 RAG 检索能力。
+- 在现有手动 Knowledge 上下文基础上，设计关键词检索或 embedding / RAG 检索能力。
+- 在保持 API Key 后端托管的前提下，继续扩展模型配置管理和检索结果追踪。
 
 ## 文档入口
 
@@ -198,3 +197,11 @@ npm run dev
 - 前端只显示“API Key 已配置 / 未配置”，不提供 API Key 输入框。
 - 前端 mock 模型列表仍保留为展示用数据，不会改变后端真实 `LLM_MODEL`。
 - 当前仍不支持 ModelConfig CRUD、多用户模型配置、多 provider 管理、API Key 加密存储、真实 RAG、auth / RBAC 或 Workspace。
+
+## Phase 2.9 Knowledge 后端化轻量版
+
+- 已新增 KnowledgeDocument 后端表和 `/api/v1/knowledge-documents` CRUD。
+- 列表只返回 `contentPreview`，详情接口按需返回完整 `content`。
+- Knowledge 页面已从前端 mock 数据迁移到后端持久化数据源。
+- ChatTest 可手动选择启用中的后端文档，并缓存详情后拼接 `knowledgeContext`。
+- 当前不是 RAG，不做 embedding、向量数据库、自动召回、文件上传或文档解析。

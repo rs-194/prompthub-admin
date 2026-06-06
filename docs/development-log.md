@@ -664,3 +664,35 @@
 - `cd backend && python -m compileall app`
 - `cd frontend && npm run build`
 - 人工验证路径：启动后端和前端，访问 `/models`，确认页面展示后端模型配置状态且不显示 API Key 明文
+
+### 2026-06-07：Phase 2.9 Knowledge 后端化轻量版
+
+内容：
+- 新增 `knowledge_documents` 表与 Knowledge CRUD，支持分页、keyword、enabled 筛选和 404
+- tags 内部使用 JSON 字符串，对外返回 `string[]`，解析失败兜底为空数组
+- 列表只返回 `contentPreview`，详情按需返回完整 `content`
+- Knowledge 页面从前端 mock 数据迁移到后端持久化数据源
+- ChatTest 加载启用中的后端文档，按需请求并缓存详情，运行前拼接完整正文到现有 `knowledgeContext`
+- 保持 ChatTest stream、TestRecord、详情 Drawer 和双记录对比契约不变
+- 当前不是 RAG，不做 embedding、向量数据库、自动召回、文件上传、文档解析或联网搜索
+
+影响范围：
+- backend/app/modules/knowledge
+- backend/app/api/v1/knowledge.py
+- backend/app/api/v1/router.py
+- backend/app/main.py
+- frontend/src/services/knowledge.ts
+- frontend/src/types/knowledge.ts
+- frontend/src/views/knowledge
+- frontend/src/views/chat-test/ChatTestView.vue
+- frontend/src/views/chat-test/components/KnowledgeContextPanel.vue
+- docs/modules/knowledge/phase-2-9-knowledge-backend-lite.md
+- README.md / backend/README.md / docs/modules/README.md / docs/roadmap.md
+- notes/interview/chat-test-notes.md / chat-test-qa.md
+
+验证方式：
+- `cd backend && python -m compileall app`
+- FastAPI TestClient CRUD 冒烟：create/list/content keyword/detail/update/enabled/404/delete
+- 确认列表无完整 `content`、详情有完整 `content`
+- `cd frontend && npm run build`
+- 没有真实 LLM API Key 时只验证 Knowledge CRUD 和 ChatTest payload 构造，不宣称真实模型调用成功

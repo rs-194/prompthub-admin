@@ -1,48 +1,44 @@
 <template>
   <el-drawer
     :model-value="visible"
-    title="知识库文档摘要"
-    size="420px"
+    title="知识库文档详情"
+    size="520px"
     @close="handleClose"
   >
-    <el-empty v-if="!document" description="暂无文档预览信息" />
+    <div v-if="loading" class="knowledge-preview__state">
+      文档详情加载中...
+    </div>
+
+    <el-alert
+      v-else-if="errorMessage"
+      :title="errorMessage"
+      type="error"
+      show-icon
+      :closable="false"
+    />
+
+    <el-empty v-else-if="!document" description="暂无文档详情" />
 
     <div v-else class="knowledge-preview">
       <el-alert
         show-icon
-        title="当前展示的是 mock 切片数量与 mock 向量化状态，不代表真实 RAG 处理结果。"
-        type="warning"
+        title="这是可由 ChatTest 手动选择的后端文档，不是 embedding、向量检索或自动召回结果。"
+        type="info"
         :closable="false"
       />
 
       <section class="knowledge-preview__section">
         <h3>{{ document.title }}</h3>
-        <p>{{ document.summary }}</p>
+        <p class="knowledge-preview__summary">
+          {{ document.summary || '未填写摘要' }}
+        </p>
       </section>
 
       <section class="knowledge-preview__section">
         <div class="knowledge-preview__meta">
           <div class="knowledge-preview__meta-row">
-            <span>分类</span>
-            <strong>{{ categoryLabel }}</strong>
-          </div>
-          <div class="knowledge-preview__meta-row">
-            <span>来源类型</span>
-            <strong>{{ sourceTypeLabel }}</strong>
-          </div>
-          <div class="knowledge-preview__meta-row">
             <span>来源名称</span>
-            <strong>{{ document.sourceName }}</strong>
-          </div>
-          <div class="knowledge-preview__meta-row">
-            <span>mock 切片数量</span>
-            <strong>{{ document.chunkCount }}</strong>
-          </div>
-          <div class="knowledge-preview__meta-row">
-            <span>mock 向量化状态</span>
-            <el-tag :type="vectorStatusTagType">
-              {{ vectorStatusLabel }}
-            </el-tag>
+            <strong>{{ document.sourceName || '-' }}</strong>
           </div>
           <div class="knowledge-preview__meta-row">
             <span>启用状态</span>
@@ -51,8 +47,12 @@
             </el-tag>
           </div>
           <div class="knowledge-preview__meta-row">
+            <span>创建时间</span>
+            <strong>{{ formatDateTime(document.createdAt) }}</strong>
+          </div>
+          <div class="knowledge-preview__meta-row">
             <span>更新时间</span>
-            <strong>{{ document.updatedAt }}</strong>
+            <strong>{{ formatDateTime(document.updatedAt) }}</strong>
           </div>
         </div>
       </section>
@@ -73,42 +73,32 @@
           </span>
         </div>
       </section>
+
+      <section class="knowledge-preview__section">
+        <h4>文档正文</h4>
+        <pre class="knowledge-preview__content">{{ document.content }}</pre>
+      </section>
     </div>
   </el-drawer>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import type { KnowledgeDocumentDetail } from '@/types/knowledge';
 
-import type { KnowledgeDocumentItem } from '@/types/knowledge';
-
-// 预览抽屉只展示父组件传入的 props，不调用 service，也不维护本地 document 副本。
-const props = defineProps<{
+defineProps<{
   visible: boolean;
-  document: KnowledgeDocumentItem | null;
-  categoryLabel: string;
-  sourceTypeLabel: string;
-  vectorStatusLabel: string;
+  document: KnowledgeDocumentDetail | null;
+  loading: boolean;
+  errorMessage: string;
 }>();
 
 const emit = defineEmits<{
   'update:visible': [value: boolean];
 }>();
 
-const vectorStatusTagType = computed(() => {
-  if (!props.document) {
-    return 'info';
-  }
-
-  const tagTypeMap = {
-    not_started: 'info',
-    processing: 'warning',
-    completed: 'success',
-    failed: 'danger',
-  } as const;
-
-  return tagTypeMap[props.document.vectorStatus];
-});
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString('zh-CN', { hour12: false });
+}
 
 function handleClose() {
   emit('update:visible', false);
@@ -122,12 +112,18 @@ function handleClose() {
   gap: 18px;
 }
 
+.knowledge-preview__state {
+  padding: 32px 0;
+  color: #606266;
+  text-align: center;
+}
+
 .knowledge-preview__section h3,
 .knowledge-preview__section h4 {
   margin: 0 0 10px;
 }
 
-.knowledge-preview__section p {
+.knowledge-preview__summary {
   margin: 0;
   color: #606266;
   line-height: 1.7;
@@ -141,7 +137,7 @@ function handleClose() {
 
 .knowledge-preview__meta-row {
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: 110px 1fr;
   gap: 12px;
   padding: 12px;
   border-bottom: 1px solid #ebeef5;
@@ -152,7 +148,8 @@ function handleClose() {
   border-bottom: 0;
 }
 
-.knowledge-preview__meta-row span {
+.knowledge-preview__meta-row span,
+.knowledge-preview__empty {
   color: #909399;
 }
 
@@ -168,8 +165,16 @@ function handleClose() {
   gap: 8px;
 }
 
-.knowledge-preview__empty {
-  color: #909399;
-  font-size: 14px;
+.knowledge-preview__content {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #303133;
+  font-family: inherit;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 </style>

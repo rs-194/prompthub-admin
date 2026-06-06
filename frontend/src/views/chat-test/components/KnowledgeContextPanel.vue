@@ -1,32 +1,43 @@
 <script setup lang="ts">
-import type { ChatTestKnowledgeOption } from '@/types/chatTest';
-import type { KnowledgeVectorStatus } from '@/types/knowledge';
+import { computed } from 'vue';
+import type {
+  KnowledgeDocumentDetail,
+  KnowledgeDocumentListItem,
+} from '@/types/knowledge';
 
-// 展示已选知识库 mock context，本组件只接收 props，不调用 service、不维护业务状态、不修改传入数据。
-defineProps<{
-  documents: ChatTestKnowledgeOption[];
+const props = defineProps<{
+  documents: KnowledgeDocumentListItem[];
+  details: KnowledgeDocumentDetail[];
+  loadingIds: number[];
+  errorMessage: string;
 }>();
 
-const vectorStatusLabelMap: Record<KnowledgeVectorStatus, string> = {
-  not_started: '未开始',
-  processing: '处理中',
-  completed: '已完成',
-  failed: '失败',
-};
+const detailMap = computed(
+  () => new Map(props.details.map((detail) => [detail.id, detail])),
+);
 </script>
 
 <template>
   <el-card shadow="never">
     <template #header>
       <div class="card-header">
-        <span>知识库 mock context 预览</span>
-        <el-tag size="small" type="warning" effect="plain">非真实检索结果</el-tag>
+        <span>手动知识库上下文预览</span>
+        <el-tag size="small" type="warning" effect="plain">不是 RAG</el-tag>
       </div>
     </template>
 
     <el-alert
-      title="当前为手动选择文档后拼接的 mock context，仅用于演示 Prompt + 模型 + 知识库上下文的调试闭环。"
+      title="当前将用户手动选择的后端文档正文拼入 knowledgeContext，不做 embedding、向量检索或自动召回。"
       type="warning"
+      show-icon
+      :closable="false"
+      class="context-alert"
+    />
+
+    <el-alert
+      v-if="errorMessage"
+      :title="errorMessage"
+      type="error"
       show-icon
       :closable="false"
       class="context-alert"
@@ -41,16 +52,25 @@ const vectorStatusLabelMap: Record<KnowledgeVectorStatus, string> = {
       <div v-for="document in documents" :key="document.id" class="context-item">
         <div class="context-title">
           <strong>{{ document.title }}</strong>
-          <el-tag size="small">{{ document.categoryLabel }}</el-tag>
+          <el-tag size="small">{{ document.sourceName || '手工录入' }}</el-tag>
         </div>
 
-        <p class="context-summary">{{ document.summary }}</p>
-
-        <div class="context-meta">
-          <span>来源：{{ document.sourceName }}</span>
-          <span>mock 切片数：{{ document.chunkCount }}</span>
-          <span>mock 向量状态：{{ vectorStatusLabelMap[document.vectorStatus] }}</span>
+        <div
+          v-if="loadingIds.includes(document.id)"
+          class="context-loading"
+        >
+          正文加载中...
         </div>
+
+        <template v-else>
+          <p class="context-summary">
+            {{ document.summary || document.contentPreview }}
+          </p>
+
+          <pre v-if="detailMap.get(document.id)" class="context-content">{{
+            detailMap.get(document.id)?.content
+          }}</pre>
+        </template>
 
         <div v-if="document.tags.length > 0" class="tag-list">
           <el-tag
@@ -114,8 +134,22 @@ const vectorStatusLabelMap: Record<KnowledgeVectorStatus, string> = {
   line-height: 1.7;
 }
 
-.context-meta {
+.context-loading {
+  color: #909399;
+  font-size: 13px;
+}
+
+.context-content {
+  max-height: 180px;
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  border-radius: 4px;
+  background: #fff;
   color: #606266;
-  font-size: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 </style>
