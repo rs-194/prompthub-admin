@@ -754,3 +754,25 @@
 - 确认列表无完整 `content`、详情有完整 `content`
 - `cd frontend && npm run build`
 - `git diff --check`
+
+### 2026-06-07：Phase 2.12 项目收束与投递包装
+
+内容：
+- 更新 README，按 Phase 2.11 后真实主链路整理项目定位、核心能力、技术栈、链路图、项目边界和后续规划
+- 更新 `docs/project-showcase.md`，整理项目展示页、解决问题、功能模块、技术亮点、截图占位、当前边界和规划
+- 新增 `docs/interview/project-story.md`、`docs/interview/resume-bullets.md`、`docs/interview/qa-prompthub-admin.md`，用于面试讲解、简历描述和项目问答
+- 同步 `docs/modules/README.md`、`docs/roadmap.md` 和 `backend/README.md`，明确 Phase 2.12 是文档收束阶段，不修改业务代码
+- 更新本地 `notes/interview` 复习资料，补充 Phase 2.12 投递包装和真实边界说明
+
+影响范围：
+- README.md
+- docs/project-showcase.md
+- docs/interview
+- docs/modules/README.md
+- docs/roadmap.md
+- backend/README.md
+- notes/interview
+
+验证方式：
+- `git diff --check`
+- 未执行 `npm run build` / `compileall`，本阶段只修改文档和本地 notes，不修改业务代码

@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-当前后端已推进至 Phase 2.11，现有能力包括 TestRecord 持久化、ChatTest run / fetch stream、后端 `.env` 模型配置、ModelConfig 脱敏状态展示、Knowledge 后端化轻量 CRUD，以及 Prompt 后端化轻量 CRUD。Knowledge 当前仅由用户手动选择文档并拼入上下文，不是完整 RAG。
+当前后端已推进至 Phase 2.12 文档收束阶段。后端业务能力仍保持 Phase 2.11 状态：TestRecord 持久化、ChatTest run / fetch stream、后端 `.env` 模型配置、ModelConfig 脱敏状态展示、Knowledge 后端化轻量 CRUD，以及 Prompt 后端化轻量 CRUD。Knowledge 当前仅由用户手动选择文档并拼入上下文，不是完整 RAG。
 
 ## 当前已完成
 
@@ -35,6 +35,13 @@
 - Prompt 版本管理 / 变量引擎 / 审核流 / marketplace
 - ModelConfig 完整 CRUD 与多 provider 管理
 - Alembic 数据库迁移
+
+## 投递讲解边界
+
+- 后端用于支撑前端真实调试链路，不包装成完整企业级后端平台。
+- API Key 只由后端 `.env` / 环境变量托管，前端不输入、不保存、不展示。
+- PromptTemplate 和 KnowledgeDocument 是轻量 CRUD，不包含版本管理、文件上传、解析、embedding 或自动召回。
+- TestRecord 对比是历史记录复盘，不是多模型并发生成。
 
 ## 本地启动
 

@@ -1,67 +1,82 @@
-﻿# 路线图（Roadmap）
+# 路线图（Roadmap）
 
 ## v0.1 项目骨架整理与基础布局修复
+
 - 目标：完成后台基础结构可用状态。
-- 计划内容：目录整理、基础路由、菜单配置、页面骨架、布局修复。
 - 当前状态：已完成。
 
 ## v0.2 Dashboard 首页数据看板
+
 - 目标：为首页提供可扩展的数据看板框架。
-- 计划内容：统计卡片、趋势区域、关键指标展示（可先使用 mock）。
 - 当前状态：进行中（已完成 Dashboard 首页 mock 数据看板，后端待接入，趋势区域待实现）。
 
 ## v0.3 提示词管理
+
 - 目标：支持提示词列表与基础 CRUD。
-- 计划内容：列表页、筛选、创建/编辑/删除、详情展示。
 - 当前状态：进行中（Phase 2.11 已完成 Prompt 后端化轻量版，支持 SQLite 持久化、分页、keyword、category、enabled 筛选、创建/编辑/删除、启用/停用和详情按需加载；不做版本管理、变量引擎、审核流或 marketplace）。
 
 ## v0.4 模型配置
+
 - 目标：支持模型接入参数配置与展示。
-- 计划内容：模型列表、配置表单、状态展示。
-- 当前状态：进行中（已完成模型配置 mock 管理，支持列表、搜索、供应商筛选、新增/编辑/删除与启用/停用；当前为 mock 数据，后端待接入，不真实调用模型 API）。
+- 当前状态：进行中（已完成模型配置 mock 管理和 Phase 2.8 轻量 ModelConfig 后端可信状态展示；当前只展示后端环境配置脱敏状态，不做 API Key 输入、加密存储、ModelConfig CRUD 或多 provider 管理）。
 
 ## v0.5 对话测试
+
 - 目标：提供后台内的模型对话测试能力。
-- 计划内容：测试输入区、历史记录、基础参数控制。
-- 当前状态：进行中（已完成对话测试 / Prompt 调试台 v3 基础能力；Phase 2.4 已接入真实 run；Phase 2.5 已接入 fetch stream + NDJSON；Phase 2.6 已完成 TestRecord 详情 Drawer；Phase 2.7 已完成历史双记录对比；Phase 2.9 已将 Knowledge 上下文来源切换为启用中的后端文档，按需加载并缓存完整正文后手动拼入 `knowledgeContext`；Phase 2.11 已将 Prompt 来源切换为启用中的后端 PromptTemplate，运行前按需加载并缓存完整 `content`；Model 仍是现有配置源；当前不是原生 EventSource SSE，不做多模型并发生成、不做真实 RAG，用户主动停止时 v1 不保存 stopped 记录）。
+- 当前状态：进行中（已完成真实 run、fetch stream + NDJSON、TestRecord 详情 Drawer、历史双记录对比、手动 Knowledge 上下文和后端 PromptTemplate 接入；当前不是原生 EventSource SSE，不做多模型并发生成、不做真实 RAG，用户主动停止时 v1 不保存 stopped 记录）。
 
 ## v0.6 知识库管理
+
 - 目标：提供知识条目管理与检索基础能力。
-- 计划内容：知识列表、基础增删改、后续检索能力对接。
 - 当前状态：进行中（Phase 2.9 已完成 Knowledge 后端化轻量版，支持 SQLite 持久化、分页、keyword、enabled 筛选、创建/编辑/删除、启用/停用和详情正文按需加载；ChatTest 可手动选择启用中的后端文档作为上下文；当前不上传文件、不自动解析、不调用 embedding、不接向量数据库、不做真实 RAG 检索）。
 
 ## v0.7 FastAPI 后端接入
-- 目标：完成前后端基础联调。
-- 计划内容：接口规范、后端项目骨架、TestRecord 持久化、ChatTest mock stream、后续鉴权基础与关键模块 API 对接。
-- 当前状态：进行中（Phase 2.1 FastAPI 骨架、Phase 2.2 TestRecord CRUD、Phase 2.3 非流式 run、Phase 2.4 前端接入、Phase 2.5 fetch stream、Phase 2.7 历史双记录对比均已完成；Phase 2.9 已新增 KnowledgeDocument 表与 CRUD，并完成 Knowledge 页面和 ChatTest 手动上下文接入；Phase 2.11 已新增 PromptTemplate 表与 CRUD，并完成 Prompt 页面和 ChatTest 后端 Prompt 接入；当前尚未实现真实 RAG、真实认证 / JWT / RBAC，Model 仍未完成完整后端 CRUD）。
 
-## Phase 2 后续顺序
-- Phase 2.4：前端 ChatTest 接入 `/api/v1/chat-test/run`，展示真实 output，并使用后端返回的 record 更新最近测试记录。（已完成）
+- 目标：完成前后端基础联调。
+- 当前状态：进行中（已完成 FastAPI 骨架、TestRecord CRUD、ChatTest run / stream、ModelConfig 状态展示、KnowledgeDocument CRUD、PromptTemplate CRUD；当前尚未实现真实 RAG、真实认证 / JWT / RBAC，Model 仍未完成完整后端 CRUD）。
+
+## v0.8 登录与权限控制
+
+- 目标：完善后台访问控制能力。
+- 当前状态：进行中（已完成认证与路由访问控制 v1 mock；当前不接后端、不做真实 JWT 校验、不做 RBAC、不做菜单权限或按钮权限）。
+
+## v0.9 README、截图、部署文档完善
+
+- 目标：完善项目展示与交付文档。
+- 当前状态：进行中（Phase 2.12 已完成项目收束与投递包装，新增面试讲解稿、简历 bullet 和项目 QA；真实截图、部署文档仍待补充）。
+
+## Phase 2 已完成阶段
+
+- Phase 2.4：前端 ChatTest 接入 `/api/v1/chat-test/run`。（已完成）
 - Phase 2.5：真实 fetch stream + StreamingResponse + NDJSON 输出。（已完成；不是原生 EventSource SSE）
 - Phase 2.6：测试记录详情 Drawer。（已完成）
 - Phase 2.7：双记录对比。（已完成；基于历史 TestRecord，不是多模型并发生成）
 - Phase 2.8：README 展示化与项目包装整理。（已完成；文档展示整理，不修改业务代码）
 - Phase 2.8：轻量 ModelConfig 展示。（已完成；读取后端可信 LLM 配置状态，不返回 API Key，不做 CRUD）
 - Phase 2.9：Knowledge 后端化轻量版。（已完成；后端 CRUD + ChatTest 手动选择上下文，不是 RAG）
-- Phase 2.10：收束清理与稳定性补丁。（已完成；修正文档阶段描述、移除 Knowledge 旧 mock 兼容链路，并让 ChatTest 初始化在 Knowledge 加载失败时 fail-open；不修改 stream / TestRecord 契约）
-- Phase 2.11：Prompt 后端化轻量版。（已完成；后端 CRUD + Prompt 页面接入 + ChatTest 使用后端 Prompt 详情完整 content；不做版本管理、变量引擎、审核流或 marketplace）
-- 后续建议顺序：记录详情 / 对比继续优化、failed / stopped record 保存策略、简单关键词检索或 RAG 方案设计、auth / Workspace / 多租户。
+- Phase 2.10：收束清理与稳定性补丁。（已完成；不修改 stream / TestRecord 契约）
+- Phase 2.11：Prompt 后端化轻量版。（已完成；后端 CRUD + Prompt 页面接入 + ChatTest 使用后端 Prompt 详情完整 content）
+- Phase 2.12：项目收束与投递包装。（已完成；只整理文档、简历描述和面试讲解，不修改业务代码）
 
-## v0.8 登录与权限控制
-- 目标：完善后台访问控制能力。
-- 计划内容：登录页、Token 管理、路由权限、菜单权限。
-- 当前状态：进行中（已完成认证与路由访问控制 v1 mock，支持 mock 登录、Pinia auth store、localStorage mock 登录态恢复、后台路由守卫、Header 用户展示与退出登录；当前不接后端、不做真实 JWT 校验、不做 RBAC、不做菜单权限或按钮权限）。
+## 后续规划
 
-## v0.9 README、截图、部署文档完善
-- 目标：完善项目展示与交付文档。
-- 计划内容：README 强化、页面截图、部署与运行说明。
-- 当前状态：进行中（Phase 2.8 已完成 README 展示化与项目包装整理，新增 `docs/project-showcase.md` 用于项目投递、面试讲解和简历描述准备；真实截图、部署文档仍待补充）。
+### 近期可做
 
-## Phase 2.8 轻量 ModelConfig 展示补充
+- UI 细节 polish。
+- failed / stopped TestRecord 保存策略。
+- 简单关键词检索增强。
+- 项目截图和部署说明。
 
-- 当前状态：已完成轻量 ModelConfig 展示。
-- 后端新增 `GET /api/v1/model-config`，读取 settings / 环境变量中的可信 LLM 配置状态。
-- 前端模型配置页面展示 provider、model、baseUrlHost、enabled、apiKeyConfigured、temperature、maxTokens 和 timeoutSeconds。
-- API Key 不返回明文，只展示“已配置 / 未配置”。
-- 前端 mock 模型列表仍仅用于展示，不直接决定真实 `LLM_MODEL`。
-- 当前仍不支持 API Key 输入、加密存储、多用户模型配置、ModelConfig CRUD、多 provider 管理、真实 RAG、auth / RBAC 或 Workspace。
+### 中期可做
+
+- Prompt 版本管理。
+- 简单变量填充。
+- Knowledge 文件上传。
+- embedding / RAG 方案设计。
+
+### 长期可做
+
+- auth / workspace。
+- 多 provider。
+- 多模型对比。
+- 权限和审计。

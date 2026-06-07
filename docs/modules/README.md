@@ -19,6 +19,7 @@
 | 对话测试 / Prompt 调试台 | Phase 2.6 TestRecord 详情 Drawer | `chat-test/phase-2-6-record-detail-drawer.md` | 已实现 |
 | 对话测试 / Prompt 调试台 | Phase 2.7 TestRecord 双记录对比 | `chat-test/phase-2-7-record-compare.md` | 已实现 |
 | 项目展示整理 | Phase 2.8 README 展示化与项目包装 | `../project-showcase.md` | 已完成 |
+| 项目收束与投递包装 | Phase 2.12 文档、简历与面试材料 | `../interview/project-story.md` | 已完成 |
 
 ## 后端阶段说明
 
@@ -32,16 +33,18 @@
 - Phase 2.8 已完成 README 展示化与项目包装整理，新增项目展示说明，用于项目投递、面试讲解和后续简历描述准备；本阶段只修改文档，不修改业务代码。
 - Phase 2.9 已完成 Knowledge 后端化轻量版，提供文档 CRUD、分页、keyword、enabled 筛选和 ChatTest 手动上下文选择。
 - Phase 2.11 已完成 Prompt 后端化轻量版，提供 PromptTemplate CRUD、分页、keyword、category、enabled 筛选，并让 ChatTest 使用后端 Prompt 详情中的完整 `content`。
+- Phase 2.12 已完成项目收束与投递包装，只整理 README、项目展示页、简历 bullet 和面试讲解材料，不修改业务代码。
 - Model 仍未完整后端化；Knowledge 和 Prompt 已迁移到后端持久化数据源。
 - 当前未实现真实 RAG、embedding、向量数据库、文件上传、真实认证 / JWT / RBAC。
 - 当前 SQLite + `create_all` 是开发期方案，后续正式阶段可引入 Alembic。
 
 后续阶段顺序：
 
-1. 记录详情 / 对比继续优化。
+1. UI 细节 polish、项目截图和部署说明。
 2. failed / stopped record 持久化与 stream 错误恢复。
-3. 简单关键词检索或真实 RAG / embedding 方案设计。
-4. auth / Workspace / 多租户。
+3. 简单关键词检索、Prompt 版本管理或变量填充。
+4. Knowledge 文件上传、embedding / RAG 方案设计。
+5. auth / Workspace / 多租户、多 provider、权限和审计。
 
 ModelConfig 后端化是后续增强，不排在 stream 前面。
 
