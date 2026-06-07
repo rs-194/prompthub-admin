@@ -1,5 +1,4 @@
 import type { ModelProvider } from './model';
-import type { KnowledgeVectorStatus } from './knowledge';
 
 export interface ChatTestPromptOption {
   id: number;
@@ -13,19 +12,6 @@ export interface ChatTestModelOption {
   name: string;
   provider: ModelProvider;
   modelName: string;
-  enabled: boolean;
-}
-
-export interface ChatTestKnowledgeOption {
-  id: number;
-  title: string;
-  category: string;
-  categoryLabel: string;
-  sourceName: string;
-  summary: string;
-  tags: string[];
-  chunkCount: number;
-  vectorStatus: KnowledgeVectorStatus;
   enabled: boolean;
 }
 
@@ -48,16 +34,6 @@ export interface ChatTestRunRequest {
   userInput: string;
   modelName: string;
   knowledgeContext: KnowledgeContextPayload;
-  params: ChatTestParams;
-}
-
-export interface ChatTestFormData {
-  promptId: number;
-  modelId: number;
-  userInput: string;
-  knowledgeIds: number[];
-  selectedKnowledgeDocs: ChatTestKnowledgeOption[];
-  contextPreview: string;
   params: ChatTestParams;
 }
 

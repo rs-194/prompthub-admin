@@ -112,28 +112,38 @@ async function loadInitialData() {
   errorMessage.value = '';
   knowledgeError.value = '';
 
+  const knowledgeRequest = getKnowledgeDocumentList({
+    page: 1,
+    pageSize: 100,
+    enabled: true,
+  })
+    .then((response) => {
+      knowledgeOptions.value = response.items;
+    })
+    .catch((error: unknown) => {
+      knowledgeOptions.value = [];
+      selectedKnowledgeIds.value = [];
+      knowledgeError.value =
+        error instanceof KnowledgeApiError
+          ? error.message
+          : '知识库文档加载失败，请稍后重试';
+    });
+
   try {
-    const [prompts, models, knowledgeResponse, records] = await Promise.all([
+    const [prompts, models, records] = await Promise.all([
       getChatTestPromptOptions(),
       getChatTestModelOptions(),
-      getKnowledgeDocumentList({
-        page: 1,
-        pageSize: 100,
-        enabled: true,
-      }),
       getChatTestRecords(),
     ]);
 
     promptOptions.value = prompts;
     modelOptions.value = models;
-    knowledgeOptions.value = knowledgeResponse.items;
     testRecords.value = records;
-  } catch (error) {
-    if (error instanceof KnowledgeApiError) {
-      knowledgeError.value = error.message;
-    }
+  } catch {
     errorMessage.value = '调试台初始化失败，请稍后重试';
   }
+
+  await knowledgeRequest;
 }
 
 /**

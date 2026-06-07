@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-当前后端处于 Phase 2.5：在 Phase 2.1 FastAPI 最小骨架、Phase 2.2 TestRecord 持久化接口和 Phase 2.3 真实 LLM 非流式调用接口基础上，新增真实 fetch stream + StreamingResponse + NDJSON 流式输出接口。
+当前后端已推进至 Phase 2.10 收束阶段，现有能力包括 TestRecord 持久化、ChatTest run / fetch stream、后端 `.env` 模型配置、ModelConfig 脱敏状态展示，以及 Knowledge 后端化轻量 CRUD。Knowledge 当前仅由用户手动选择文档并拼入上下文，不是完整 RAG。
 
 ## 当前已完成
 
@@ -29,7 +29,7 @@
 - 真实 RAG / embedding / 向量数据库
 - 真实认证 / JWT / RBAC
 - Prompt / Model 完整后端 CRUD
-- ModelConfig 后端化
+- ModelConfig 完整 CRUD 与多 provider 管理
 - Alembic 数据库迁移
 
 ## 本地启动

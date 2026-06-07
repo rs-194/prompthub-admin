@@ -696,3 +696,28 @@
 - 确认列表无完整 `content`、详情有完整 `content`
 - `cd frontend && npm run build`
 - 没有真实 LLM API Key 时只验证 Knowledge CRUD 和 ChatTest payload 构造，不宣称真实模型调用成功
+
+### 2026-06-07：Phase 2.10 收束清理与稳定性补丁
+
+内容：
+- 修正 `backend/README.md` 停留在 Phase 2.5 的过期描述，按当前能力说明 TestRecord、ChatTest run / stream、`.env` 模型配置、ModelConfig 脱敏展示和 Knowledge 轻量 CRUD
+- 删除 Knowledge 旧 mock 类型、分类 helper、无参数列表重载及后端列表到 mock 元数据的 adapter
+- 删除 ChatTest 已不再使用的 Knowledge mock 选项、mock 运行和 mock chunk helper，仅保留当前真实 run / stream 与 TestRecord 链路
+- ChatTest 初始化将 Knowledge 列表请求与 Prompt / Model / TestRecord 核心初始化解耦；Knowledge 加载失败只显示 Knowledge 错误并回退为空列表
+- 未选择或无法加载 Knowledge 时仍使用 `{ titles: [], content: "" }`，不影响基础 Prompt / Model 调试
+- 本阶段不修改后端代码，不修改 ChatTest stream 请求契约、流式解析、TestRecord 保存、详情或对比逻辑
+
+影响范围：
+- backend/README.md
+- frontend/src/types/knowledge.ts
+- frontend/src/services/knowledge.ts
+- frontend/src/types/chatTest.ts
+- frontend/src/services/chatTest.ts
+- frontend/src/views/chat-test/ChatTestView.vue
+- docs/roadmap.md
+- docs/development-log.md
+
+验证方式：
+- `cd frontend && npm run build`
+- `git diff --check`
+- 人工验证路径：访问 `/chat-test`；Knowledge 接口失败时确认 Prompt / Model 仍可初始化，Knowledge 面板显示错误且未选择 Knowledge 时仍可运行

@@ -43,6 +43,7 @@
 - Phase 2.8：README 展示化与项目包装整理。（已完成；文档展示整理，不修改业务代码）
 - Phase 2.8：轻量 ModelConfig 展示。（已完成；读取后端可信 LLM 配置状态，不返回 API Key，不做 CRUD）
 - Phase 2.9：Knowledge 后端化轻量版。（已完成；后端 CRUD + ChatTest 手动选择上下文，不是 RAG）
+- Phase 2.10：收束清理与稳定性补丁。（已完成；修正文档阶段描述、移除 Knowledge 旧 mock 兼容链路，并让 ChatTest 初始化在 Knowledge 加载失败时 fail-open；不修改 stream / TestRecord 契约）
 - 后续建议顺序：记录详情 / 对比继续优化、failed / stopped record 保存策略、简单关键词检索或 RAG 方案设计、auth / Workspace / 多租户。
 
 ## v0.8 登录与权限控制

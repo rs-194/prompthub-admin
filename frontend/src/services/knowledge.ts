@@ -1,8 +1,6 @@
 import type {
-  KnowledgeCategory,
   KnowledgeDocumentCreateRequest,
   KnowledgeDocumentDetail,
-  KnowledgeDocumentItem,
   KnowledgeDocumentListItem,
   KnowledgeDocumentListParams,
   KnowledgeDocumentListResponse,
@@ -144,41 +142,10 @@ async function fetchKnowledgeDocumentList(
   return data;
 }
 
-/**
- * 无参数重载仅用于兼容旧 chatTest mock helper；Phase 2.9 页面调用带参数重载。
- */
-export function getKnowledgeDocumentList(): Promise<KnowledgeDocumentItem[]>;
-export function getKnowledgeDocumentList(
-  params: KnowledgeDocumentListParams,
-): Promise<KnowledgeDocumentListResponse>;
 export async function getKnowledgeDocumentList(
-  params?: KnowledgeDocumentListParams,
-): Promise<KnowledgeDocumentItem[] | KnowledgeDocumentListResponse> {
-  const response = await fetchKnowledgeDocumentList(
-    params ?? { page: 1, pageSize: 100 },
-  );
-
-  if (params) {
-    return response;
-  }
-
-  return response.items.map((document) => ({
-    id: document.id,
-    title: document.title,
-    category: 'backend',
-    sourceType: 'manual',
-    sourceName: document.sourceName ?? '手工录入',
-    summary: document.summary ?? document.contentPreview,
-    tags: [...document.tags],
-    chunkCount: 0,
-    vectorStatus: 'not_started',
-    enabled: document.enabled,
-    updatedAt: document.updatedAt,
-  }));
-}
-
-export function getKnowledgeCategories(): Promise<KnowledgeCategory[]> {
-  return Promise.resolve([{ label: '后端文档', value: 'backend' }]);
+  params: KnowledgeDocumentListParams,
+): Promise<KnowledgeDocumentListResponse> {
+  return fetchKnowledgeDocumentList(params);
 }
 
 export async function getKnowledgeDocumentDetail(
