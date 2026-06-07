@@ -15,6 +15,7 @@
 ### ChatTest 调试台
 
 - Prompt / Model / Knowledge 配置源选择。
+- Prompt 模板来自后端持久化数据源。
 - 参数配置：temperature / maxTokens / outputFormat。
 - 真实 LLM 流式输出。
 - fetch stream + NDJSON 逐段渲染。
@@ -145,13 +146,14 @@ npm run dev
 | 详情 Drawer | 已完成 | 按需加载完整 output |
 | 双记录对比 | 已完成 | 基于历史 TestRecord |
 | Knowledge 后端化轻量版 | 已完成 | 文档 CRUD + ChatTest 手动上下文 |
+| Prompt 后端化轻量版 | 已完成 | PromptTemplate CRUD + ChatTest 使用完整模板内容 |
 | 真实 RAG | 未完成 | 后续计划 |
 | ModelConfig 状态展示 | 已完成 | 只读脱敏状态，不做 CRUD |
 | auth / RBAC | 未完成 | 后续计划 |
 
 ## 项目边界
 
-- Prompt / Model 当前仍未完成完整后端 CRUD；Knowledge 已使用后端持久化文档。
+- Prompt / Knowledge 已使用后端持久化数据源；ModelConfig 当前是后端可信 LLM 配置状态展示，不是完整模型配置 CRUD。
 - knowledgeContext 来自用户手动选择的后端文档，不是真实 RAG，不做 embedding、向量检索、自动召回或排序。
 - 双记录对比基于历史 TestRecord，不是多模型并发生成，不做多路 stream，也不新增 compareGroup 后端表。
 - API Key 当前由后端环境变量托管，不做前端密文存储。
@@ -173,6 +175,7 @@ npm run dev
 - 设计 TestRecord 测试记录链路，支持后端持久化、列表 outputPreview 展示、详情 Drawer 按需加载完整 output。
 - 实现基于历史 TestRecord 的双记录对比 Drawer，支持并排复盘两次 Prompt 调试的输入、参数、上下文和完整输出。
 - 实现 Knowledge 文档后端 CRUD，并让 ChatTest 手动选择启用文档作为模型上下文。
+- 实现 Prompt 模板后端 CRUD，并让 ChatTest 使用启用模板详情中的完整 content 作为 systemPrompt。
 - 将真实 API Key 托管在后端 `.env` / 环境变量中，前端只通过 `/api` 代理调用后端接口。
 - 按 service / types / components 拆分前端模块，配套维护模块文档、路线图和开发日志。
 
@@ -205,3 +208,12 @@ npm run dev
 - Knowledge 页面已从前端 mock 数据迁移到后端持久化数据源。
 - ChatTest 可手动选择启用中的后端文档，并缓存详情后拼接 `knowledgeContext`。
 - 当前不是 RAG，不做 embedding、向量数据库、自动召回、文件上传或文档解析。
+
+## Phase 2.11 Prompt 后端化轻量版
+
+- 已新增 PromptTemplate 后端表和 `/api/v1/prompt-templates` CRUD。
+- 列表只返回 `contentPreview`，详情接口按需返回完整 `content`。
+- Prompt 管理页面已从前端 mock 数据迁移到后端持久化数据源。
+- ChatTest 加载启用中的后端 Prompt 模板，并在选择或运行时按需请求详情、缓存完整 `content`。
+- 运行 ChatTest 时使用后端 Prompt 详情中的完整 `content` 作为 `systemPrompt`。
+- 当前不做 Prompt 版本管理、diff、变量解析引擎、marketplace、审核流、多租户、auth / RBAC 或 Workspace。

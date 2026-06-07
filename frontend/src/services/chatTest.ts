@@ -1,5 +1,5 @@
 import { getModelConfigList } from './model';
-import { getPromptList } from './prompt';
+import { getPromptTemplateList } from './prompt';
 import { buildApiUrl, request, RequestError } from './request';
 import type {
   ChatTestModelOption,
@@ -234,7 +234,7 @@ function getOutputFormatLabel(outputFormat: ChatTestParams['outputFormat']) {
  * maxTokens 截断或模型严格遵循输出格式。后续接真实 LLM API 时，可保留该展示函数，
  * 但参数真实生效逻辑应由后端模型调用或流式接口实现。
  *
- * @param params 当前 Prompt 调试台 mock 测试参数
+ * @param params 当前 Prompt 调试台测试参数
  * @returns 简短参数摘要文本
  */
 export function buildParamsSummary(params: ChatTestParams): string {
@@ -415,20 +415,24 @@ export async function runPromptTestStreamApi(
 /**
  * 获取调试台可选提示词。
  *
- * 页面初始化时调用，当前优先复用提示词管理模块的 getPromptList()，
- * 将已有 mock 提示词转换为调试台选项；后续接后端时优先替换 getPromptList()
- * 或在这里改为调用后端提供的调试台提示词选项接口。
+ * 页面初始化时调用，读取后端已启用的 PromptTemplate 列表。
+ * 列表响应只包含 contentPreview；ChatTest 选择或运行时会按需请求详情，
+ * 确保真正发送给后端 stream 接口的是完整 Prompt content。
  *
  * @returns 可用于 Prompt 调试台选择器的提示词选项列表
  */
 export async function getChatTestPromptOptions(): Promise<ChatTestPromptOption[]> {
-  const prompts = await getPromptList();
+  const response = await getPromptTemplateList({
+    page: 1,
+    pageSize: 100,
+    enabled: true,
+  });
 
-  return prompts.map((prompt) => ({
+  return response.items.map((prompt) => ({
     id: prompt.id,
     title: prompt.title,
     category: prompt.category,
-    content: prompt.content,
+    contentPreview: prompt.contentPreview,
   }));
 }
 

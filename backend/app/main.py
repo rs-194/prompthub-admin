@@ -5,13 +5,14 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.db.session import Base, engine
 from app.modules.knowledge import models as knowledge_models
+from app.modules.prompts import models as prompt_models
 from app.modules.test_records import models as test_record_models
 
 
 def init_db() -> None:
     """Create development tables for registered SQLAlchemy models."""
 
-    _ = (knowledge_models, test_record_models)
+    _ = (knowledge_models, prompt_models, test_record_models)
     Base.metadata.create_all(bind=engine)
 
 

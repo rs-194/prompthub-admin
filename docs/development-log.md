@@ -721,3 +721,36 @@
 - `cd frontend && npm run build`
 - `git diff --check`
 - 人工验证路径：访问 `/chat-test`；Knowledge 接口失败时确认 Prompt / Model 仍可初始化，Knowledge 面板显示错误且未选择 Knowledge 时仍可运行
+
+### 2026-06-07：Phase 2.11 Prompt 后端化轻量版
+
+内容：
+- 新增 `prompt_templates` 表与 PromptTemplate CRUD，支持分页、keyword、category、enabled 筛选和 404
+- tags 内部使用 JSON 字符串，对外返回 `string[]`，解析失败兜底为空数组
+- 列表只返回 `contentPreview`，详情按需返回完整 `content`
+- Prompt 管理页面从前端 mock 数据迁移到后端持久化数据源
+- ChatTest 加载启用中的后端 Prompt 模板，按需请求并缓存详情，运行时使用后端详情完整 `content` 作为 `systemPrompt`
+- 保持 ChatTest stream、TestRecord、详情 Drawer、双记录对比、Knowledge 手动上下文和 ModelConfig 只读展示契约不变
+- 当前不做 Prompt 版本管理、diff、变量解析引擎、marketplace、审核流、auth / RBAC、多租户、RAG、embedding、文件上传、新依赖或 Alembic
+
+影响范围：
+- backend/app/modules/prompts
+- backend/app/api/v1/prompt_templates.py
+- backend/app/api/v1/router.py
+- backend/app/main.py
+- frontend/src/types/prompt.ts
+- frontend/src/services/prompt.ts
+- frontend/src/services/chatTest.ts
+- frontend/src/types/chatTest.ts
+- frontend/src/views/prompts
+- frontend/src/views/chat-test/ChatTestView.vue
+- docs/modules/prompt/phase-2-11-prompt-backend-lite.md
+- README.md / backend/README.md / docs/modules/README.md / docs/roadmap.md
+- notes/interview/prompt-module-notes.md / prompt-module-qa.md
+
+验证方式：
+- `cd backend && python -m compileall app`
+- FastAPI TestClient CRUD 冒烟：create/list/keyword/category/enabled/detail/update/404/delete
+- 确认列表无完整 `content`、详情有完整 `content`
+- `cd frontend && npm run build`
+- `git diff --check`

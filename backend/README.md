@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-当前后端已推进至 Phase 2.10 收束阶段，现有能力包括 TestRecord 持久化、ChatTest run / fetch stream、后端 `.env` 模型配置、ModelConfig 脱敏状态展示，以及 Knowledge 后端化轻量 CRUD。Knowledge 当前仅由用户手动选择文档并拼入上下文，不是完整 RAG。
+当前后端已推进至 Phase 2.11，现有能力包括 TestRecord 持久化、ChatTest run / fetch stream、后端 `.env` 模型配置、ModelConfig 脱敏状态展示、Knowledge 后端化轻量 CRUD，以及 Prompt 后端化轻量 CRUD。Knowledge 当前仅由用户手动选择文档并拼入上下文，不是完整 RAG。
 
 ## 当前已完成
 
@@ -22,13 +22,17 @@
 - KnowledgeDocument SQLAlchemy model 与 CRUD
 - Knowledge 列表只返回 `contentPreview`，详情返回完整 `content`
 - ChatTest 可接收前端手动选择的后端 Knowledge 文档正文
+- PromptTemplate SQLAlchemy model 与 CRUD
+- PromptTemplate 列表只返回 `contentPreview`，详情返回完整 `content`
+- ChatTest 可接收前端选择的后端 PromptTemplate 完整正文作为 `systemPrompt`
 
 ## 当前未完成
 
 - 原生 EventSource SSE
 - 真实 RAG / embedding / 向量数据库
 - 真实认证 / JWT / RBAC
-- Prompt / Model 完整后端 CRUD
+- Model 完整后端 CRUD
+- Prompt 版本管理 / 变量引擎 / 审核流 / marketplace
 - ModelConfig 完整 CRUD 与多 provider 管理
 - Alembic 数据库迁移
 
@@ -209,4 +213,25 @@ DELETE /api/v1/knowledge-documents/{id}
 - tags 内部使用 JSON 字符串存储，对外返回 `string[]`；解析失败时兜底为空数组。
 - ChatTest 由用户手动选择启用文档并拼接上下文，不是 RAG。
 - 当前不做 embedding、向量数据库、文件上传、文档解析或联网搜索。
+- 开发期使用 `create_all` 建表，不引入 Alembic。
+
+## PromptTemplate 接口
+
+```text
+GET    /api/v1/prompt-templates
+GET    /api/v1/prompt-templates/{id}
+POST   /api/v1/prompt-templates
+PUT    /api/v1/prompt-templates/{id}
+DELETE /api/v1/prompt-templates/{id}
+```
+
+说明：
+
+- 列表支持 `page`、`pageSize`、`keyword`、`category` 和 `enabled`。
+- keyword 可匹配标题、描述、分类、使用场景和完整正文，但列表响应不会返回完整 `content`。
+- 列表只返回 `contentPreview`，详情接口返回完整 `content`。
+- tags 内部使用 JSON 字符串存储，对外返回 `string[]`；解析失败时兜底为空数组。
+- ChatTest 由前端选择启用中的 PromptTemplate，并使用详情中的完整 `content` 作为 `systemPrompt`。
+- 当前不做 Prompt 版本管理、diff、变量解析引擎、marketplace 或审核流。
+- 当前不做多租户、Workspace、auth / RBAC。
 - 开发期使用 `create_all` 建表，不引入 Alembic。

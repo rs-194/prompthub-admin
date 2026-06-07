@@ -23,6 +23,10 @@ import {
   getKnowledgeDocumentList,
   KnowledgeApiError,
 } from '@/services/knowledge';
+import {
+  getPromptTemplateDetail,
+  PromptApiError,
+} from '@/services/prompt';
 import type {
   ChatTestModelOption,
   ChatTestParams,
@@ -36,13 +40,21 @@ import type {
   KnowledgeDocumentDetail,
   KnowledgeDocumentListItem,
 } from '@/types/knowledge';
+import type { PromptTemplateDetail } from '@/types/prompt';
 
 const promptOptions = ref<ChatTestPromptOption[]>([]);
 const modelOptions = ref<ChatTestModelOption[]>([]);
 const knowledgeOptions = ref<KnowledgeDocumentListItem[]>([]);
+const promptDetailCache = ref<Record<number, PromptTemplateDetail>>({});
 const knowledgeDetailCache = ref<Record<number, KnowledgeDocumentDetail>>({});
+const promptLoadingIds = ref<number[]>([]);
 const knowledgeLoadingIds = ref<number[]>([]);
+const promptError = ref('');
 const knowledgeError = ref('');
+const promptDetailRequests = new Map<
+  number,
+  Promise<PromptTemplateDetail>
+>();
 const knowledgeDetailRequests = new Map<
   number,
   Promise<KnowledgeDocumentDetail>
@@ -80,6 +92,14 @@ const selectedPrompt = computed(() =>
   promptOptions.value.find((prompt) => prompt.id === selectedPromptId.value),
 );
 
+const selectedPromptDetail = computed(() => {
+  if (selectedPromptId.value === undefined) {
+    return undefined;
+  }
+
+  return promptDetailCache.value[selectedPromptId.value];
+});
+
 const selectedModel = computed(() =>
   modelOptions.value.find((model) => model.id === selectedModelId.value),
 );
@@ -100,17 +120,38 @@ const canRunTest = computed(
     userInput.value.trim().length > 0 &&
     !loading.value &&
     !streaming.value &&
+    promptLoadingIds.value.length === 0 &&
     knowledgeLoadingIds.value.length === 0,
 );
 
 /**
  * 加载 Prompt 调试台初始数据。
  *
- * Prompt / Model 保持现有配置源，Knowledge 列表来自后端 enabled 文档。
+ * Prompt 和 Knowledge 列表分别来自后端 enabled 数据源，二者加载失败互不阻塞。
  */
 async function loadInitialData() {
   errorMessage.value = '';
+  promptError.value = '';
   knowledgeError.value = '';
+
+  const promptRequest = getChatTestPromptOptions()
+    .then((prompts) => {
+      promptOptions.value = prompts;
+      if (
+        selectedPromptId.value !== undefined &&
+        !prompts.some((prompt) => prompt.id === selectedPromptId.value)
+      ) {
+        selectedPromptId.value = undefined;
+      }
+    })
+    .catch((error: unknown) => {
+      promptOptions.value = [];
+      selectedPromptId.value = undefined;
+      promptError.value =
+        error instanceof PromptApiError
+          ? error.message
+          : 'Prompt 模板加载失败，请稍后重试';
+    });
 
   const knowledgeRequest = getKnowledgeDocumentList({
     page: 1,
@@ -130,19 +171,18 @@ async function loadInitialData() {
     });
 
   try {
-    const [prompts, models, records] = await Promise.all([
-      getChatTestPromptOptions(),
+    const [models, records] = await Promise.all([
       getChatTestModelOptions(),
       getChatTestRecords(),
     ]);
 
-    promptOptions.value = prompts;
     modelOptions.value = models;
     testRecords.value = records;
   } catch {
     errorMessage.value = '调试台初始化失败，请稍后重试';
   }
 
+  await promptRequest;
   await knowledgeRequest;
 }
 
@@ -166,18 +206,19 @@ function buildKnowledgeContextPreview(documents: KnowledgeDocumentDetail[]) {
 }
 
 function buildRunRequest(
+  promptDetail: PromptTemplateDetail,
   contextPreview: string,
   knowledgeDetails: KnowledgeDocumentDetail[],
 ): ChatTestRunRequest | null {
-  if (!selectedPrompt.value || !selectedModel.value) {
+  if (!selectedModel.value) {
     return null;
   }
 
   const knowledgeTitles = knowledgeDetails.map((document) => document.title);
 
   return {
-    promptTitle: selectedPrompt.value.title,
-    systemPrompt: selectedPrompt.value.content,
+    promptTitle: promptDetail.title,
+    systemPrompt: promptDetail.content,
     userInput: userInput.value.trim(),
     modelName: `${selectedModel.value.name} / ${selectedModel.value.modelName}`,
     knowledgeContext: {
@@ -186,6 +227,46 @@ function buildRunRequest(
     },
     params: { ...testParams.value },
   };
+}
+
+async function loadPromptDetail(templateId: number) {
+  const cachedDetail = promptDetailCache.value[templateId];
+  if (cachedDetail) {
+    return cachedDetail;
+  }
+
+  const activeRequest = promptDetailRequests.get(templateId);
+  if (activeRequest) {
+    return activeRequest;
+  }
+
+  promptLoadingIds.value = [...promptLoadingIds.value, templateId];
+  promptError.value = '';
+
+  const requestPromise = getPromptTemplateDetail(templateId)
+    .then((detail) => {
+      promptDetailCache.value = {
+        ...promptDetailCache.value,
+        [templateId]: detail,
+      };
+      return detail;
+    })
+    .catch((error: unknown) => {
+      promptError.value =
+        error instanceof PromptApiError
+          ? error.message
+          : 'Prompt 模板详情加载失败，请稍后重试';
+      throw error;
+    })
+    .finally(() => {
+      promptDetailRequests.delete(templateId);
+      promptLoadingIds.value = promptLoadingIds.value.filter(
+        (id) => id !== templateId,
+      );
+    });
+
+  promptDetailRequests.set(templateId, requestPromise);
+  return requestPromise;
 }
 
 async function loadKnowledgeDetail(documentId: number) {
@@ -234,6 +315,20 @@ async function ensureSelectedKnowledgeDetails() {
       loadKnowledgeDetail(documentId),
     ),
   );
+}
+
+async function ensureSelectedPromptDetail() {
+  if (selectedPromptId.value === undefined) {
+    throw new Error('prompt-not-selected');
+  }
+
+  return loadPromptDetail(selectedPromptId.value);
+}
+
+function handlePromptSelectionChange(templateId: number | undefined) {
+  if (templateId !== undefined && !promptDetailCache.value[templateId]) {
+    void loadPromptDetail(templateId).catch(() => undefined);
+  }
 }
 
 function handleKnowledgeSelectionChange(documentIds: number[]) {
@@ -298,12 +393,25 @@ async function handleRunTest() {
     return;
   }
 
-  if (!selectedPrompt.value || !selectedModel.value || !canRunTest.value) {
-    errorMessage.value = '请先选择提示词、模型配置并输入测试内容';
+  if (promptOptions.value.length === 0) {
+    errorMessage.value = promptError.value || '暂无启用中的 Prompt 模板，请先在提示词管理中新增并启用';
     return;
   }
 
+  if (!selectedPrompt.value || !selectedModel.value || !canRunTest.value) {
+    errorMessage.value = '请先选择 Prompt 模板、模型配置并输入测试内容';
+    return;
+  }
+
+  let promptDetail: PromptTemplateDetail;
   let knowledgeDetails: KnowledgeDocumentDetail[];
+
+  try {
+    promptDetail = await ensureSelectedPromptDetail();
+  } catch {
+    errorMessage.value = promptError.value || 'Prompt 模板详情加载失败，请稍后重试';
+    return;
+  }
 
   try {
     knowledgeDetails = await ensureSelectedKnowledgeDetails();
@@ -314,7 +422,7 @@ async function handleRunTest() {
 
   clearResultState();
   const contextPreview = buildKnowledgeContextPreview(knowledgeDetails);
-  const requestPayload = buildRunRequest(contextPreview, knowledgeDetails);
+  const requestPayload = buildRunRequest(promptDetail, contextPreview, knowledgeDetails);
 
   if (!requestPayload) {
     errorMessage.value = '请先选择提示词和模型配置';
@@ -534,6 +642,8 @@ onBeforeUnmount(() => {
                 placeholder="请选择提示词模板"
                 filterable
                 class="full-width"
+                :disabled="promptOptions.length === 0"
+                @change="handlePromptSelectionChange"
               >
                 <el-option
                   v-for="prompt in promptOptions"
@@ -542,9 +652,15 @@ onBeforeUnmount(() => {
                   :value="prompt.id"
                 >
                   <span>{{ prompt.title }}</span>
-                  <span class="option-meta">{{ prompt.category }}</span>
+                  <span class="option-meta">{{ prompt.category || '未分类' }}</span>
                 </el-option>
               </el-select>
+              <div v-if="promptOptions.length === 0" class="form-tip">
+                暂无启用中的 Prompt 模板，请先在提示词管理中新增并启用。
+              </div>
+              <div v-if="promptError" class="form-error">
+                {{ promptError }}
+              </div>
             </el-form-item>
 
             <el-form-item label="模型配置">
@@ -654,9 +770,15 @@ onBeforeUnmount(() => {
           <div v-if="selectedPrompt" class="prompt-preview">
             <div class="preview-title">
               <strong>{{ selectedPrompt.title }}</strong>
-              <el-tag size="small">{{ selectedPrompt.category }}</el-tag>
+              <el-tag size="small">{{ selectedPrompt.category || '未分类' }}</el-tag>
             </div>
-            <p>{{ selectedPrompt.content }}</p>
+            <p>{{ selectedPromptDetail?.content || selectedPrompt.contentPreview }}</p>
+            <div
+              v-if="selectedPrompt && !selectedPromptDetail"
+              class="form-tip"
+            >
+              正在按需加载完整 Prompt 内容；运行时会使用后端详情中的完整 content。
+            </div>
           </div>
           <el-empty v-else description="请选择提示词模板查看内容预览" />
         </el-card>

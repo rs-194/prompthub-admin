@@ -3,8 +3,8 @@ import type { ModelProvider } from './model';
 export interface ChatTestPromptOption {
   id: number;
   title: string;
-  category: string;
-  content: string;
+  category: string | null;
+  contentPreview: string;
 }
 
 export interface ChatTestModelOption {

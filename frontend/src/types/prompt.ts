@@ -1,25 +1,46 @@
-// 提示词分类用于筛选下拉框和表格分类文案映射。
-export interface PromptCategory {
-  label: string;
-  value: string;
-}
-
-// 列表项表示 service 返回并在表格中展示的一条完整提示词记录。
-export interface PromptItem {
+export interface PromptTemplateListItem {
   id: number;
   title: string;
-  category: string;
-  content: string;
+  description: string | null;
+  category: string | null;
   tags: string[];
-  usageScene: string;
+  scenario: string | null;
+  enabled: boolean;
+  contentPreview: string;
+  createdAt: string;
   updatedAt: string;
 }
 
-// 弹窗模式决定表单是新增空表单，还是编辑回填表单。
-export type PromptDialogMode = 'create' | 'edit';
+export interface PromptTemplateDetail extends PromptTemplateListItem {
+  content: string;
+}
 
-// 表单只提交可编辑字段，id 和 updatedAt 由 mock service 或后端生成。
-export type PromptFormData = Pick<
-  PromptItem,
-  'title' | 'category' | 'content' | 'tags' | 'usageScene'
->;
+export interface PromptTemplateCreateRequest {
+  title: string;
+  content: string;
+  description?: string | null;
+  category?: string | null;
+  tags: string[];
+  scenario?: string | null;
+  enabled: boolean;
+}
+
+export type PromptTemplateUpdateRequest = PromptTemplateCreateRequest;
+
+export interface PromptTemplateListResponse {
+  items: PromptTemplateListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface PromptTemplateListParams {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  category?: string;
+  enabled?: boolean;
+}
+
+export type PromptTemplateFormData = PromptTemplateCreateRequest;
+export type PromptDialogMode = 'create' | 'edit';
