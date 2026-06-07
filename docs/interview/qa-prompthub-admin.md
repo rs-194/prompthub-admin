@@ -67,3 +67,12 @@ API Key 放前端会暴露在浏览器和网络请求里，风险很高。当前
 ## 17. 为什么 TestRecord 对比不新增后端 compare API？
 
 当前对比只是历史记录复盘，复用详情接口就够了。新增 compare API 或 compareGroup 表会引入额外后端设计，但现在还没有多模型并发、对比任务组或复杂 diff 的需求。
+
+18. 停止生成怎么做？
+前端使用 AbortController，中止当前 fetch stream；UI 状态从 streaming 回到可操作状态。后续可以补 stopped TestRecord 保存策略。
+
+19. 为什么用 NDJSON？
+因为流式输出需要一段一段返回，NDJSON 每行都是一个可独立解析的 JSON，前端按行解析比较简单，也比一次性返回完整 JSON 更适合长文本生成。
+
+20. 这个项目和普通 CRUD 最大区别是什么？
+CRUD 只是管理 Prompt 和 Knowledge；真正的主链路是把 Prompt、Knowledge、ModelConfig 组合进 ChatTest，运行真实流式调试，并把结果沉淀成 TestRecord 做复盘和对比。
