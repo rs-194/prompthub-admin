@@ -69,10 +69,109 @@ API Key 放前端会暴露在浏览器和网络请求里，风险很高。当前
 当前对比只是历史记录复盘，复用详情接口就够了。新增 compare API 或 compareGroup 表会引入额外后端设计，但现在还没有多模型并发、对比任务组或复杂 diff 的需求。
 
 ## 18. 停止生成怎么做？
+
 前端使用 AbortController，中止当前 fetch stream；UI 状态从 streaming 回到可操作状态。后续可以补 stopped TestRecord 保存策略。
 
 ## 19. 为什么用 NDJSON？
+
 因为流式输出需要一段一段返回，NDJSON 每行都是一个可独立解析的 JSON，前端按行解析比较简单，也比一次性返回完整 JSON 更适合长文本生成。
 
 ## 20. 这个项目和普通 CRUD 最大区别是什么？
+
 CRUD 只是管理 Prompt 和 Knowledge；真正的主链路是把 Prompt、Knowledge、ModelConfig 组合进 ChatTest，运行真实流式调试，并把结果沉淀成 TestRecord 做复盘和对比。
+
+## 21. fetch stream 解析时为什么需要 buffer？
+
+fetch stream 读取的是 `ReadableStream` 里的二进制 chunk，chunk 到达边界由网络和运行时决定，不保证刚好是一行完整 JSON。前端用 `TextDecoder` 解码后，可能拿到半行、几行，或者一行半的数据。
+
+所以需要 buffer 暂存还没解析完的内容。每次新 chunk 到达后先拼到 buffer，再按换行拆分；完整行拿去 `JSON.parse`，最后剩下的半行继续留在 buffer 里等下一次 chunk。
+
+## 22. 如果后端返回半行 JSON，前端怎么处理？
+
+前端不会立刻解析半行 JSON，而是把它留在 buffer 里。只有遇到换行符，确认这一行已经完整，才把这一行当成一条 NDJSON 事件解析。
+
+如果强行对半行做 `JSON.parse`，会出现解析错误，而且这不是后端数据一定错了，而是流式传输本身就可能把一条 JSON 拆成多个 chunk。buffer 的作用就是把这种网络层边界和业务事件边界隔离开。
+
+## 23. AbortController 中断后，后端会不会继续生成？
+
+`AbortController` 能保证前端主动中断当前 fetch 请求，页面不再继续读取 stream，UI 也会从 streaming 状态恢复。但后端和模型服务是否完全停止，要看后端是否感知到客户端断开，以及它是否继续取消上游 LLM 请求。
+
+当前项目先保证前端请求和界面状态可中断，不把它包装成完整的后端任务取消系统。后续如果要做得更完整，可以在后端检测断开、取消 httpx 上游请求，并设计 stopped TestRecord 保存策略。
+
+## 24. 为什么用 NDJSON，而不是直接返回纯文本流？
+
+纯文本流适合只展示模型输出，但这个项目不只需要文本，还需要区分 `chunk`、`done`、`error` 这类事件。NDJSON 每一行都是独立 JSON，可以在同一条 stream 里表达不同事件类型和附加字段。
+
+比如 `chunk` 用来追加输出，`done` 可以带保存后的 `TestRecord`，`error` 可以带错误信息。这样前端解析逻辑更清晰，也比自己约定文本分隔符可靠。
+
+## 25. done 事件里为什么要带 record？
+
+done 事件带 `record` 是为了让流式完成和记录保存这两个动作在前端看来是同一个完成结果。后端保存成功后，把最终的 TestRecord 返回给前端，前端可以直接更新列表或状态。
+
+如果 done 里不带 record，前端就需要额外请求列表或详情，甚至只能猜测后端有没有保存成功。带 record 可以减少一次请求，也让“生成完成且已沉淀为 TestRecord”这个状态更明确。
+
+## 26. 如果 stream 中途失败，TestRecord 要不要保存？
+
+当前项目是成功完成后保存 success TestRecord，不假装已经完整实现 failed / stopped 记录保存。中途失败或用户主动停止时，前端可以提示失败或停止，但记录沉淀策略还属于后续可补充能力。
+
+如果要做，我会先设计字段和规则，比如 `status`、`errorMessage`、`partialOutput`、`stoppedAt`，以及哪些场景保存、哪些场景不保存。这样后续复盘时能区分成功结果、失败结果和用户停止结果。
+
+## 27. Prompt / Knowledge 列表为什么不直接返回完整 content？
+
+列表页主要负责浏览、筛选和分页，如果每条 PromptTemplate 或 KnowledgeDocument 都返回完整 content，接口响应会变重，页面渲染也会更慢，尤其 Knowledge 正文可能比较长。
+
+所以列表返回 preview 字段，用于快速浏览；用户打开详情、编辑或 ChatTest 真正需要完整内容时，再按需请求详情。这是把列表读取和详情读取分开，避免为了少数操作让列表接口一直很重。
+
+## 28. 启用 / 停用 Prompt 时，为什么要先请求详情再 PUT？
+
+Prompt 列表里只有 `contentPreview`，没有完整 `content`。如果直接拿列表项拼 PUT 请求，很容易把完整内容字段覆盖丢失，尤其后端更新接口需要完整对象时风险更明显。
+
+所以启用 / 停用前先请求详情，拿到完整 PromptTemplate 后只修改 `enabled` 再提交。这个做法看起来多一次请求，但能避免列表 preview 和详情 content 字段不一致导致的数据丢失。
+
+## 29. ChatTest 为什么要缓存 Prompt / Knowledge 详情？
+
+ChatTest 运行时需要完整 Prompt content 和 Knowledge content，但列表只有 preview。如果用户多次选择同一个 PromptTemplate 或 KnowledgeDocument，每次都重新请求详情会浪费接口调用，也会让交互变慢。
+
+缓存详情可以让第一次按需加载，后续复用完整内容。它不是复杂全局缓存，只是服务于当前调试页的局部优化，减少重复请求，同时保证运行时用的是完整上下文。
+
+## 30. Prompt 加载失败和 Knowledge 加载失败为什么处理策略不同？
+
+Prompt 是 ChatTest 的核心输入之一，加载失败会直接影响这次调试能不能正确运行，所以需要明确提示用户，不能安静忽略。
+
+Knowledge 在当前项目里是可选的手动上下文，不是真 RAG 自动召回。某个 KnowledgeDocument 加载失败时，可以 fail-open：提示用户这部分上下文没有加入，但不一定阻断核心 Prompt 调试流程。
+
+## 31. 你怎么避免 View 里堆太多请求逻辑？
+
+我的边界是 View 负责页面状态和交互编排，比如当前选中项、loading、Drawer 开关和错误提示；具体接口请求放在 service 层，类型结构放在 types 层，局部 UI 放到 components 里。
+
+这样 View 里能看出业务流程，但不会到处散落 fetch URL、请求参数拼接和响应字段处理。后续如果接口路径或字段变化，优先改 service 和 types，而不是在页面里全局搜索硬编码。
+
+## 32. service 层和 types 层分别负责什么？
+
+service 层负责封装 API 调用，比如请求哪个接口、用什么 method、如何传 query 或 body、返回什么数据。它让页面不用直接关心底层请求细节。
+
+types 层负责定义请求和响应结构，比如 list item、detail、create request、update request、stream event、TestRecord response 的字段差异。这样 TypeScript 可以提前约束接口契约，减少字段名写错或把 preview 当完整 content 用的问题。
+
+## 33. TypeScript 在这个项目里的价值体现在哪里？
+
+这个项目的对象字段比较多，比如 PromptTemplate、KnowledgeDocument、TestRecord，还有列表和详情两套结构。TypeScript 能把 `contentPreview` 和 `content`、`outputPreview` 和 `output` 这种差异表达清楚，避免前端误用字段。
+
+另外，stream event 也可以用类型区分 `chunk`、`done`、`error`。这样写解析逻辑时，代码能更明确地知道每种事件有哪些字段，减少运行时才发现字段不存在的问题。
+
+## 34. 如果后续做 RAG，你会怎么改数据结构和链路？
+
+我会先明确当前 Knowledge 不是 RAG，它只是手动选择上下文。如果后续做 RAG，需要新增文档上传与解析流程，把文档拆成 chunk 表，再对 chunk 做 embedding，并接入向量数据库或向量索引。
+
+运行链路也要从现在的手动选择，扩展为 `query -> recall -> rerank -> context 注入`。同时 TestRecord 里要记录 retrieval results，比如召回了哪些 chunk、分数是多少、最终注入了哪些上下文，并控制 token budget，方便后续复盘为什么模型这样回答。
+
+## 35. 如果要部署上线，你会注意哪些问题？
+
+我会先区分前后端环境变量，API Key 只放后端，不进入前端构建产物；同时检查 CORS、Vite proxy 到生产反向代理的切换、前端 build 产物部署路径，以及后端启动命令和进程管理。
+
+数据层也要注意 SQLite 文件持久化或后续迁移方案，不能把 `.env`、真实 API Key、sqlite db 提交到仓库。上线后还需要基本日志、错误监控和超时配置，至少能定位 LLM 调用失败、接口异常和流式中断问题。
+
+## 36. 为什么项目里没有使用 axios？
+
+项目里普通 JSON 接口使用原生 fetch 做了轻量 request 封装，流式输出部分则直接使用 fetch + ReadableStream 读取响应体。因为 ChatTest 需要消费后端 StreamingResponse 返回的 NDJSON 流，浏览器端用 fetch 读取 response.body.getReader() 更直接，也方便配合 AbortController 做停止生成和组件卸载清理。
+
+所以我没有额外引入 axios，避免项目里同时存在两套请求风格。这里不是说 axios 不能处理请求，而是当前场景下 fetch 更贴合流式读取需求。
