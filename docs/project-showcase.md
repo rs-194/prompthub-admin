@@ -41,7 +41,15 @@ PromptTemplate
 - 后端使用 FastAPI + httpx 代理真实 LLM API，API Key 只由后端环境变量托管。
 - 前后端以 types / schemas 保持字段契约清晰，避免在 View 中堆积请求细节。
 
-## 6. 项目收获
+## 6. 开发问题与收获
+
+- 通过排查 Vue 组件作用域和 `<script setup>` 问题，加深了对 Vue3 组件写法的理解。
+- 通过处理 Dialog / Drawer / Panel 的 props、emit 和 v-model，同步了父子组件通信边界。
+- 通过 Prompt / Knowledge / TestRecord 的 preview / detail 设计，理解了列表轻量接口和详情完整接口的区别。
+- 通过 fetch stream 的 buffer 解析，理解了流式响应中 chunk 不等于完整 JSON 的问题。
+- 通过明确 Knowledge 不是 RAG、API Key 不进前端，学会在项目展示中保持能力边界真实。
+
+## 7. 项目收获
 
 - 把项目定位从普通聊天页推进到 AI Prompt 调试工具，围绕 Prompt、Knowledge、ModelConfig、ChatTest 和 TestRecord 形成可复盘链路。
 - 理解 Prompt / Knowledge / ModelConfig 如何组合进 ChatTest：Prompt 提供系统指令，Knowledge 提供手动上下文，ModelConfig 展示后端可信配置状态。
@@ -49,7 +57,7 @@ PromptTemplate
 - 认识到 TestRecord 不只是保存结果，还能支持详情复盘和双记录对比，帮助解释两次调试输入、参数、上下文和输出差异。
 - 明确 Knowledge 当前不是 RAG；后续如果做 RAG，需要单独设计文档切片、embedding、召回、排序和 TestRecord 中的检索结果追踪。
 
-## 7. 截图占位
+## 8. 截图占位
 
 ### ChatTest 流式调试
 
@@ -67,7 +75,7 @@ PromptTemplate
 
 占位：展示后端 CRUD 列表、筛选、启停、编辑弹窗和详情预览。
 
-## 8. 当前边界
+## 9. 当前边界
 
 - 当前不是完整 RAG。
 - Knowledge 是手动上下文，不是 embedding / 向量数据库 / 自动召回。
@@ -78,7 +86,7 @@ PromptTemplate
 - TestRecord 双记录对比是历史记录复盘，不是多模型并发生成。
 - 当前没有 auth / RBAC / 多租户 / Workspace。
 
-## 9. 后续规划
+## 10. 后续规划
 
 ### 近期可做
 

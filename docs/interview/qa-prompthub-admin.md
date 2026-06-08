@@ -175,3 +175,19 @@ types 层负责定义请求和响应结构，比如 list item、detail、create 
 项目里普通 JSON 接口使用原生 fetch 做了轻量 request 封装，流式输出部分则直接使用 fetch + ReadableStream 读取响应体。因为 ChatTest 需要消费后端 StreamingResponse 返回的 NDJSON 流，浏览器端用 fetch 读取 response.body.getReader() 更直接，也方便配合 AbortController 做停止生成和组件卸载清理。
 
 所以我没有额外引入 axios，避免项目里同时存在两套请求风格。这里不是说 axios 不能处理请求，而是当前场景下 fetch 更贴合流式读取需求。
+
+## 37. 项目开发中遇到过什么问题，你是怎么排查的？
+
+我遇到过几类比较典型的问题。第一类是 Vue 组件作用域问题，比如模板里状态或方法没有正常生效。我会先看浏览器控制台报错，再回到组件里检查 `<script setup>`、顶层变量声明、模板绑定和 ref / computed / 方法是否在正确作用域中。
+
+第二类是拆分 Dialog、Drawer、Panel 后，父组件传入字段、子组件 props、emits 或 v-model 名称不一致，导致弹窗提交后列表没有刷新、选中状态没有同步。我后面会沿着数据流方向排查：父组件是否拥有页面状态，子组件是否只负责局部 UI 和事件抛出，字段类型和事件名是否统一。
+
+这个过程让我更重视组件职责边界、类型定义和父子通信约定。后续写组件时，我会先明确 props / emits / v-model 的契约，再实现内部交互，避免靠临时字段把状态串起来。
+
+## 38. 列表 preview 和详情完整内容分离后，开发中要注意什么？
+
+列表接口为了轻量，通常只返回 preview 字段，比如 Prompt / Knowledge 的 `contentPreview`、TestRecord 的 `outputPreview`。这些字段适合浏览和筛选，但不能当成完整内容使用。
+
+所以编辑、启停、详情展示或 ChatTest 真正需要完整 content / output 时，不能直接依赖列表项，而是要按需请求详情。尤其 PUT 更新时，如果拿列表 preview 拼请求，可能会把完整字段覆盖丢失。
+
+这个设计在 Prompt、Knowledge、TestRecord 中都有体现。它的核心是把轻量列表和完整详情职责分开：列表保证页面快速浏览，详情保证编辑、运行和复盘时字段完整。
