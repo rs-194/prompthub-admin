@@ -124,6 +124,34 @@ const canRunTest = computed(
     knowledgeLoadingIds.value.length === 0,
 );
 
+const runButtonTip = computed(() => {
+  if (streaming.value) {
+    return '正在流式生成中，可使用停止生成中断本次请求';
+  }
+
+  if (promptOptions.value.length === 0) {
+    return '暂无可用 Prompt，需先启用至少一个 Prompt 模板';
+  }
+
+  if (!selectedPrompt.value) {
+    return '请选择一个 Prompt 模板';
+  }
+
+  if (!selectedModel.value) {
+    return '请选择后端模型配置状态中的可用模型';
+  }
+
+  if (userInput.value.trim().length === 0) {
+    return '请输入本次要调试的用户内容';
+  }
+
+  if (promptLoadingIds.value.length > 0 || knowledgeLoadingIds.value.length > 0) {
+    return '正在加载所选 Prompt 或 Knowledge 详情';
+  }
+
+  return '将使用 fetch stream + NDJSON 发起真实流式调试';
+});
+
 /**
  * 加载 Prompt 调试台初始数据。
  *
@@ -394,12 +422,12 @@ async function handleRunTest() {
   }
 
   if (promptOptions.value.length === 0) {
-    errorMessage.value = promptError.value || '暂无启用中的 Prompt 模板，请先在提示词管理中新增并启用';
+    errorMessage.value = promptError.value || '当前没有可运行的 Prompt 模板，请先在提示词管理中新增并启用后再试';
     return;
   }
 
   if (!selectedPrompt.value || !selectedModel.value || !canRunTest.value) {
-    errorMessage.value = '请先选择 Prompt 模板、模型配置并输入测试内容';
+    errorMessage.value = '还不能开始运行，请确认 Prompt、模型配置和测试内容都已准备好';
     return;
   }
 
@@ -409,14 +437,14 @@ async function handleRunTest() {
   try {
     promptDetail = await ensureSelectedPromptDetail();
   } catch {
-    errorMessage.value = promptError.value || 'Prompt 模板详情加载失败，请稍后重试';
+    errorMessage.value = promptError.value || '未能读取完整 Prompt 内容，请稍后重试';
     return;
   }
 
   try {
     knowledgeDetails = await ensureSelectedKnowledgeDetails();
   } catch {
-    errorMessage.value = knowledgeError.value || '知识库文档加载失败，请稍后重试';
+    errorMessage.value = knowledgeError.value || '所选 Knowledge 文档暂时无法读取，请稍后重试或取消选择后运行基础 Prompt 调试';
     return;
   }
 
@@ -425,7 +453,7 @@ async function handleRunTest() {
   const requestPayload = buildRunRequest(promptDetail, contextPreview, knowledgeDetails);
 
   if (!requestPayload) {
-    errorMessage.value = '请先选择提示词和模型配置';
+    errorMessage.value = '还不能开始运行，请先选择 Prompt 和模型配置';
     return;
   }
 
@@ -622,8 +650,13 @@ onBeforeUnmount(() => {
       <div>
         <h1>对话测试 / Prompt 调试台</h1>
         <p>
-          用于验证提示词模板、模型配置、手动选择的后端知识库上下文与测试参数组合。当前已接入真实 fetch stream 流式输出，但不是 RAG，不做 embedding、向量检索或自动召回。
+          当前链路用于验证 Prompt 模板、手动 Knowledge 上下文、后端模型配置状态与测试参数组合，并通过 fetch stream + NDJSON 展示真实流式输出。Knowledge 只会按用户选择拼入上下文，不是 RAG，也不做 embedding、向量检索或自动召回。
         </p>
+        <div class="header-tags">
+          <el-tag type="success" effect="plain">Prompt + 手动 Knowledge</el-tag>
+          <el-tag type="info" effect="plain">后端模型配置状态</el-tag>
+          <el-tag type="warning" effect="plain">非 RAG</el-tag>
+        </div>
       </div>
       <el-tag type="success" effect="plain">真实流式</el-tag>
     </div>
@@ -656,7 +689,7 @@ onBeforeUnmount(() => {
                 </el-option>
               </el-select>
               <div v-if="promptOptions.length === 0" class="form-tip">
-                暂无启用中的 Prompt 模板，请先在提示词管理中新增并启用。
+                当前没有可选 Prompt。启用 Prompt 模板后，这里会用于组装本次调试的 systemPrompt。
               </div>
               <div v-if="promptError" class="form-error">
                 {{ promptError }}
@@ -680,6 +713,9 @@ onBeforeUnmount(() => {
                   <span class="option-meta">{{ model.provider }} · {{ model.modelName }}</span>
                 </el-option>
               </el-select>
+              <div v-if="modelOptions.length === 0" class="form-tip">
+                暂无可用模型配置状态，请确认后端 ModelConfig 已 ready。
+              </div>
             </el-form-item>
 
             <el-form-item label="知识库文档">
@@ -705,7 +741,7 @@ onBeforeUnmount(() => {
                 </el-option>
               </el-select>
               <div v-if="knowledgeOptions.length === 0" class="form-tip">
-                暂无启用中的知识库文档，不影响基础 Prompt 测试。
+                暂无可选 Knowledge 文档；不选择也可以运行基础 Prompt 调试。
               </div>
               <div v-if="knowledgeError" class="form-error">
                 {{ knowledgeError }}
@@ -728,9 +764,10 @@ onBeforeUnmount(() => {
                 type="primary"
                 :loading="streaming"
                 :disabled="!canRunTest"
+                :title="runButtonTip"
                 @click="handleRunTest"
               >
-                运行测试
+                {{ streaming ? '生成中...' : '运行测试' }}
               </el-button>
               <el-button
                 type="warning"
@@ -743,13 +780,13 @@ onBeforeUnmount(() => {
               </el-button>
               <el-button :disabled="loading" @click="handleClearInput">清空</el-button>
               <el-button
-                :disabled="loading || (!testResult && !streamingText)"
+                :disabled="loading || (!testResult && !streamingText && !errorMessage)"
                 @click="handleClearResult"
               >
                 清空结果
               </el-button>
             </div>
-            <div class="form-tip">{{ streamingStopTip }}</div>
+            <div class="form-tip">{{ runButtonTip }}。{{ streamingStopTip }}</div>
           </el-form>
         </el-card>
 
@@ -846,6 +883,13 @@ onBeforeUnmount(() => {
   margin: 8px 0 0;
   color: #606266;
   line-height: 1.7;
+}
+
+.header-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .workspace-grid {

@@ -46,7 +46,8 @@ function handleOutputFormatChange(value: ChatTestOutputFormat) {
     </template>
 
     <el-alert
-      title="参数会随 run 请求发送到后端；真实模型和 API Key 仍由后端环境变量控制。"
+      title="这些参数会随本次调试请求发送给后端真实 LLM 调用。"
+      description="outputFormat 是期望输出格式提示，不保证模型一定返回合法 JSON；真实模型和 API Key 仍由后端配置控制。"
       type="info"
       show-icon
       :closable="false"
@@ -65,6 +66,9 @@ function handleOutputFormatChange(value: ChatTestOutputFormat) {
           class="full-width"
           @update:model-value="handleTemperatureChange"
         />
+        <div class="parameter-tip">
+          数值越低越稳定，越高越发散；后端仍会做边界保护。
+        </div>
       </el-form-item>
 
       <el-form-item label="Max tokens">
@@ -77,6 +81,9 @@ function handleOutputFormatChange(value: ChatTestOutputFormat) {
           class="full-width"
           @update:model-value="handleMaxTokensChange"
         />
+        <div class="parameter-tip">
+          控制本次期望输出长度上限，较大值可能带来更长等待时间。
+        </div>
       </el-form-item>
 
       <el-form-item label="输出格式">
@@ -93,6 +100,9 @@ function handleOutputFormatChange(value: ChatTestOutputFormat) {
             :value="option.value"
           />
         </el-select>
+        <div class="parameter-tip">
+          用于提示模型按文本、Markdown 或 JSON 风格输出，不是强制格式校验。
+        </div>
       </el-form-item>
     </el-form>
   </el-card>
@@ -117,5 +127,12 @@ function handleOutputFormatChange(value: ChatTestOutputFormat) {
 
 .full-width {
   width: 100%;
+}
+
+.parameter-tip {
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

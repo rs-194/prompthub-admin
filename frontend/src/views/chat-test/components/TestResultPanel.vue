@@ -9,6 +9,24 @@ defineProps<{
   streamingText: string;
   errorMessage: string;
 }>();
+
+function formatDuration(durationMs: number) {
+  if (durationMs < 1000) {
+    return `${durationMs}ms`;
+  }
+
+  return `${(durationMs / 1000).toFixed(1)}s`;
+}
+
+function formatCreatedAt(createdAt: string) {
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return createdAt;
+  }
+
+  return date.toLocaleString();
+}
 </script>
 
 <template>
@@ -22,7 +40,8 @@ defineProps<{
 
     <el-alert
       v-if="errorMessage"
-      :title="errorMessage"
+      title="本次生成未完成"
+      :description="errorMessage"
       type="error"
       show-icon
       :closable="false"
@@ -30,7 +49,7 @@ defineProps<{
 
     <div v-else-if="streaming || streamingText" class="result-content">
       <div class="streaming-title">
-        <span>{{ streaming ? '流式生成中' : '已停止生成，已保留当前片段' }}</span>
+        <span>{{ streaming ? '正在流式生成中...' : '已停止生成，已保留当前片段' }}</span>
         <el-tag size="small" type="success" effect="plain">fetch stream</el-tag>
       </div>
       <pre class="result-output streaming-output">{{ streamingText || '正在等待模型返回首段内容...' }}</pre>
@@ -42,22 +61,25 @@ defineProps<{
 
     <el-empty
       v-else-if="!result"
-      description="暂无测试结果，请选择提示词和模型后运行测试"
+      description="暂无输出，选择 Prompt、模型并输入测试内容后即可运行"
     />
 
     <div v-else class="result-content">
+      <div class="result-status">
+        <el-tag type="success" effect="plain">生成完成</el-tag>
+      </div>
       <div class="result-meta">
         <span>提示词：{{ result.usedPromptTitle }}</span>
         <span>模型：{{ result.usedModelName }}</span>
-        <span>耗时：{{ result.durationMs }}ms</span>
-        <span>时间：{{ result.createdAt }}</span>
+        <span>耗时：{{ formatDuration(result.durationMs) }}</span>
+        <span>时间：{{ formatCreatedAt(result.createdAt) }}</span>
         <span>参数：{{ result.paramsSummary }}</span>
       </div>
 
       <div v-if="result.usedKnowledgeTitles.length > 0" class="knowledge-summary">
         <div class="knowledge-title">
-          <span>知识库 context</span>
-          <el-tag size="small" type="warning" effect="plain">非真实检索结果</el-tag>
+          <span>手动 Knowledge 上下文</span>
+          <el-tag size="small" type="warning" effect="plain">非 RAG</el-tag>
         </div>
         <div class="knowledge-tags">
           <el-tag
@@ -105,6 +127,11 @@ defineProps<{
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.result-status {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .result-meta {
@@ -159,6 +186,8 @@ defineProps<{
 
 .result-output {
   min-height: 180px;
+  max-height: 560px;
+  overflow: auto;
   background: #f7f8fa;
 }
 

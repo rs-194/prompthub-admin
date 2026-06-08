@@ -21,14 +21,15 @@ const detailMap = computed(
   <el-card shadow="never">
     <template #header>
       <div class="card-header">
-        <span>手动知识库上下文预览</span>
+        <span>手动 Knowledge 上下文</span>
         <el-tag size="small" type="warning" effect="plain">不是 RAG</el-tag>
       </div>
     </template>
 
     <el-alert
-      title="当前将用户手动选择的后端文档正文拼入 knowledgeContext，不做 embedding、向量检索或自动召回。"
-      type="warning"
+      title="这里会把手动选择的后端 Knowledge 文档正文拼入本次请求上下文。"
+      description="不选择也可以运行基础 Prompt 调试；当前不做 embedding、向量检索或自动召回。"
+      type="info"
       show-icon
       :closable="false"
       class="context-alert"
@@ -36,8 +37,9 @@ const detailMap = computed(
 
     <el-alert
       v-if="errorMessage"
-      :title="errorMessage"
-      type="error"
+      title="Knowledge 详情暂时无法加载"
+      :description="errorMessage"
+      type="warning"
       show-icon
       :closable="false"
       class="context-alert"
@@ -45,7 +47,7 @@ const detailMap = computed(
 
     <el-empty
       v-if="documents.length === 0"
-      description="未选择知识库，将按基础 Prompt 测试运行"
+      description="未选择 Knowledge；可以直接运行基础 Prompt 调试"
     />
 
     <div v-else class="context-list">
@@ -59,7 +61,7 @@ const detailMap = computed(
           v-if="loadingIds.includes(document.id)"
           class="context-loading"
         >
-          正文加载中...
+          正在加载文档正文...
         </div>
 
         <template v-else>

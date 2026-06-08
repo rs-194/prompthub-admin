@@ -776,3 +776,28 @@
 验证方式：
 - `git diff --check`
 - 未执行 `npm run build` / `compileall`，本阶段只修改文档和本地 notes，不修改业务代码
+
+### 2026-06-09：Phase 2.13A ChatTest 与 TestRecord UI polish
+
+内容：
+- 优化 ChatTest 顶部说明、运行/停止/清空按钮提示、Prompt / ModelConfig / Knowledge 空态和用户可读错误文案
+- 优化 `TestResultPanel` 的 streaming、完成、错误和空状态展示，保持 fetch stream + NDJSON 流式解析逻辑不变
+- 优化 `TestRecordTable` 状态 Tag、耗时展示、空记录文案、详情/对比按钮文案和两条记录对比提示
+- 优化 TestRecord 详情 Drawer 与双记录对比 Drawer 的分区、长文本滚动、Knowledge 空态、耗时/时间展示和轻量差异提示
+- 优化 Knowledge 手动上下文与测试参数说明，继续明确当前不是 RAG，不做 embedding、向量检索或自动召回
+- 本阶段不修改后端代码，不修改 services / types，不新增依赖，不改变业务契约
+
+影响范围：
+- frontend/src/views/chat-test/ChatTestView.vue
+- frontend/src/views/chat-test/components/TestResultPanel.vue
+- frontend/src/views/chat-test/components/TestRecordTable.vue
+- frontend/src/views/chat-test/components/TestRecordDetailDrawer.vue
+- frontend/src/views/chat-test/components/TestRecordCompareDrawer.vue
+- frontend/src/views/chat-test/components/KnowledgeContextPanel.vue
+- frontend/src/views/chat-test/components/TestParameterPanel.vue
+- docs/development-log.md
+
+验证方式：
+- `cd frontend && npm run build`
+- `git diff --check`
+- 人工验证路径：访问 `/chat-test`；检查无 Prompt / 无 Knowledge / 有记录状态、streaming 文案、停止生成、详情 Drawer、选择两条记录打开 Compare Drawer，以及页面是否存在明显撑爆或错位

@@ -17,8 +17,29 @@ const emit = defineEmits<{
 const tableRef = ref<TableInstance>();
 const selectedRecords = ref<ChatTestRecord[]>([]);
 
+const statusMetaMap: Record<
+  ChatTestRecord['status'],
+  { label: string; type: 'success' | 'warning' | 'danger' }
+> = {
+  success: { label: '成功', type: 'success' },
+  failed: { label: '失败', type: 'danger' },
+  stopped: { label: '已停止', type: 'warning' },
+};
+
 function canSelectRecord(row: ChatTestRecord) {
   return selectedRecords.value.some((record) => record.id === row.id) || selectedRecords.value.length < 2;
+}
+
+function formatDuration(durationMs: number) {
+  if (durationMs < 1000) {
+    return `${durationMs}ms`;
+  }
+
+  return `${(durationMs / 1000).toFixed(1)}s`;
+}
+
+function getStatusMeta(status: ChatTestRecord['status']) {
+  return statusMetaMap[status];
 }
 
 function handleSelectionChange(selection: ChatTestRecord[]) {
@@ -46,15 +67,20 @@ function handleSelectionChange(selection: ChatTestRecord[]) {
           <span>最近测试记录</span>
           <el-tag size="small" type="info">{{ records.length }} 条</el-tag>
         </div>
-        <el-button
-          type="primary"
-          plain
-          :disabled="selectedRecords.length !== 2"
-          title="请选择 2 条记录进行对比"
-          @click="emit('compareSelected')"
-        >
-          对比选中记录
-        </el-button>
+        <div class="compare-actions">
+          <span class="selection-tip">
+            已选择 {{ selectedRecords.length }}/2 条，选择 2 条后可打开对比
+          </span>
+          <el-button
+            type="primary"
+            plain
+            :disabled="selectedRecords.length !== 2"
+            title="请选择 2 条记录进行对比"
+            @click="emit('compareSelected')"
+          >
+            对比详情
+          </el-button>
+        </div>
       </div>
     </template>
 
@@ -62,7 +88,7 @@ function handleSelectionChange(selection: ChatTestRecord[]) {
       ref="tableRef"
       :data="records"
       row-key="id"
-      empty-text="暂无测试记录"
+      empty-text="暂无测试记录，完成一次流式调试后会出现在这里"
       stripe
       @selection-change="handleSelectionChange"
     >
@@ -87,16 +113,17 @@ function handleSelectionChange(selection: ChatTestRecord[]) {
       <el-table-column prop="outputPreview" label="输出摘要" min-width="220" show-overflow-tooltip />
       <el-table-column prop="durationMs" label="耗时" width="100">
         <template #default="{ row }">
-          {{ row.durationMs }}ms
+          {{ formatDuration(row.durationMs) }}
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
           <el-tag
-            :type="row.status === 'success' ? 'success' : row.status === 'stopped' ? 'warning' : 'danger'"
+            :type="getStatusMeta(row.status).type"
             size="small"
+            effect="plain"
           >
-            {{ row.status === 'success' ? '成功' : row.status === 'stopped' ? '已停止' : '失败' }}
+            {{ getStatusMeta(row.status).label }}
           </el-tag>
         </template>
       </el-table-column>
@@ -108,7 +135,7 @@ function handleSelectionChange(selection: ChatTestRecord[]) {
             link
             @click="emit('viewDetail', row.id)"
           >
-            详情
+            查看详情
           </el-button>
         </template>
       </el-table-column>
@@ -128,6 +155,19 @@ function handleSelectionChange(selection: ChatTestRecord[]) {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.compare-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.selection-tip {
+  color: #909399;
+  font-size: 12px;
 }
 
 .empty-knowledge {

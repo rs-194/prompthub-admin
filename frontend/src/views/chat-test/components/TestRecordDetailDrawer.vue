@@ -55,6 +55,24 @@ const knowledgeText = computed(() => {
 
   return props.detail.knowledgeTitles.join('、');
 });
+
+function formatDuration(durationMs: number) {
+  if (durationMs < 1000) {
+    return `${durationMs}ms`;
+  }
+
+  return `${(durationMs / 1000).toFixed(1)}s`;
+}
+
+function formatCreatedAt(createdAt: string) {
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return createdAt;
+  }
+
+  return date.toLocaleString();
+}
 </script>
 
 <template>
@@ -99,10 +117,10 @@ const knowledgeText = computed(() => {
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="创建时间">
-            {{ detail.createdAt }}
+            {{ formatCreatedAt(detail.createdAt) }}
           </el-descriptions-item>
           <el-descriptions-item label="耗时">
-            {{ detail.durationMs }}ms
+            {{ formatDuration(detail.durationMs) }}
           </el-descriptions-item>
         </el-descriptions>
       </el-card>
@@ -126,18 +144,27 @@ const knowledgeText = computed(() => {
 
       <el-card shadow="never">
         <template #header>
-          <span>用户输入</span>
+          <div class="section-header">
+            <span>用户输入</span>
+            <el-tag size="small" type="info" effect="plain">本次请求</el-tag>
+          </div>
         </template>
         <pre class="text-block">{{ detail.userInput }}</pre>
       </el-card>
 
       <el-card shadow="never">
         <template #header>
-          <span>知识库上下文</span>
+          <div class="section-header">
+            <span>Knowledge 上下文</span>
+            <el-tag size="small" type="warning" effect="plain">手动选择</el-tag>
+          </div>
         </template>
         <div class="knowledge-summary">
-          <el-tag type="warning" effect="plain">
-            {{ detail.knowledgeCount }} 篇
+          <el-tag
+            :type="detail.knowledgeCount > 0 ? 'warning' : 'info'"
+            effect="plain"
+          >
+            {{ detail.knowledgeCount > 0 ? `${detail.knowledgeCount} 篇` : '未使用' }}
           </el-tag>
           <span>{{ knowledgeText }}</span>
         </div>
@@ -145,7 +172,10 @@ const knowledgeText = computed(() => {
 
       <el-card shadow="never">
         <template #header>
-          <span>输出结果</span>
+          <div class="section-header">
+            <span>完整输出</span>
+            <el-tag size="small" type="success" effect="plain">按需加载</el-tag>
+          </div>
         </template>
         <pre class="text-block output-block">{{ detail.output }}</pre>
       </el-card>
@@ -169,6 +199,13 @@ const knowledgeText = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .text-block {

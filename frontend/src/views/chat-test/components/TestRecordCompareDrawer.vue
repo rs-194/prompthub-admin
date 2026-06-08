@@ -55,6 +55,24 @@ function formatKnowledgeTitles(record: TestRecordDetail) {
   return record.knowledgeTitles.join('、');
 }
 
+function formatDuration(durationMs: number) {
+  if (durationMs < 1000) {
+    return `${durationMs}ms`;
+  }
+
+  return `${(durationMs / 1000).toFixed(1)}s`;
+}
+
+function formatCreatedAt(createdAt: string) {
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return createdAt;
+  }
+
+  return date.toLocaleString();
+}
+
 function normalizeTitles(titles: string[]) {
   return [...titles].sort().join('|');
 }
@@ -86,7 +104,7 @@ const diffTips = computed(() => {
   if (left.durationMs !== right.durationMs) {
     const diff = Math.abs(left.durationMs - right.durationMs);
     const fasterRecord = left.durationMs < right.durationMs ? 'Record A' : 'Record B';
-    tips.push(`${fasterRecord} 快 ${diff}ms`);
+    tips.push(`${fasterRecord} 快 ${formatDuration(diff)}`);
   }
 
   return tips;
@@ -122,7 +140,7 @@ const descriptionSize: ComponentSize = 'default';
     <div v-else class="compare-content">
       <el-alert
         v-if="diffTips.length > 0"
-        type="info"
+        type="warning"
         show-icon
         :closable="false"
       >
@@ -147,7 +165,10 @@ const descriptionSize: ComponentSize = 'default';
           class="record-panel"
         >
           <div class="record-heading">
-            <h3>{{ index === 0 ? 'Record A' : 'Record B' }}</h3>
+            <div>
+              <h3>{{ index === 0 ? 'Record A' : 'Record B' }}</h3>
+              <p>{{ formatCreatedAt(record.createdAt) }}</p>
+            </div>
             <el-tag :type="getStatusTagType(record.status)" size="small">
               {{ statusLabelMap[record.status] }}
             </el-tag>
@@ -165,10 +186,10 @@ const descriptionSize: ComponentSize = 'default';
                 {{ record.modelName }}
               </el-descriptions-item>
               <el-descriptions-item label="创建时间">
-                {{ record.createdAt }}
+                {{ formatCreatedAt(record.createdAt) }}
               </el-descriptions-item>
               <el-descriptions-item label="耗时">
-                {{ record.durationMs }}ms
+                {{ formatDuration(record.durationMs) }}
               </el-descriptions-item>
             </el-descriptions>
           </el-card>
@@ -202,8 +223,11 @@ const descriptionSize: ComponentSize = 'default';
               <span>知识库上下文</span>
             </template>
             <div class="knowledge-summary">
-              <el-tag type="warning" effect="plain">
-                {{ record.knowledgeCount }} 篇
+              <el-tag
+                :type="record.knowledgeCount > 0 ? 'warning' : 'info'"
+                effect="plain"
+              >
+                {{ record.knowledgeCount > 0 ? `${record.knowledgeCount} 篇` : '未使用' }}
               </el-tag>
               <span>{{ formatKnowledgeTitles(record) }}</span>
             </div>
@@ -256,6 +280,10 @@ const descriptionSize: ComponentSize = 'default';
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  background: #fafafa;
 }
 
 .record-heading h3 {
@@ -263,6 +291,12 @@ const descriptionSize: ComponentSize = 'default';
   color: #303133;
   font-size: 16px;
   font-weight: 600;
+}
+
+.record-heading p {
+  margin: 6px 0 0;
+  color: #909399;
+  font-size: 12px;
 }
 
 .text-block {
