@@ -33,6 +33,13 @@ PromptTemplate
 → 详情 / 对比复盘
 ```
 
+## 项目收获
+
+- 更清楚地区分 AI Prompt 调试平台和普通聊天页：重点不只是对话，而是 Prompt、上下文、模型状态和记录复盘。
+- 实践 Vue3 + TypeScript 下 views / components / services / types 的分层组织，减少页面内请求和类型逻辑堆积。
+- 掌握 fetch stream / ReadableStream / NDJSON 的浏览器端流式渲染方式。
+- 理解 preview / detail 分离、API Key 不进入前端这类接口与安全边界。
+
 ## 技术栈
 
 ### 前端
