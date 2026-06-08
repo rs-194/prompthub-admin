@@ -10,6 +10,7 @@
 | 知识库管理 | v1 mock | `knowledge/v1-mock-design.md` | 已实现 |
 | 知识库管理 | Phase 2.9 backend lite | `knowledge/phase-2-9-knowledge-backend-lite.md` | 已实现 |
 | 提示词管理 | Phase 2.11 backend lite | `prompt/phase-2-11-prompt-backend-lite.md` | 已实现 |
+| Dashboard 首页 | Phase 2.13B summary 接入 | `dashboard/phase-2-13-dashboard-summary.md` | 已实现 |
 | 认证与路由访问控制 | v1 mock | `auth/v1-mock-design.md` | 已实现 |
 | FastAPI 后端 | Phase 2.1 backend skeleton | `backend/v1-backend-skeleton.md` | 已实现 |
 | FastAPI 后端 | Phase 2.2 TestRecord 持久化 | `backend/v2-test-records.md` | 已实现 |
@@ -34,13 +35,14 @@
 - Phase 2.9 已完成 Knowledge 后端化轻量版，提供文档 CRUD、分页、keyword、enabled 筛选和 ChatTest 手动上下文选择。
 - Phase 2.11 已完成 Prompt 后端化轻量版，提供 PromptTemplate CRUD、分页、keyword、category、enabled 筛选，并让 ChatTest 使用后端 Prompt 详情中的完整 `content`。
 - Phase 2.12 已完成项目收束与投递包装，只整理 README、项目展示页、简历 bullet 和面试讲解材料，不修改业务代码。
+- Phase 2.13B 已完成 Dashboard 真实数据接入，新增 summary 接口并让首页展示真实统计、最近 TestRecord 和 ModelConfig 脱敏 ready 状态；本阶段不改变 ChatTest 主链路，不做复杂图表或大屏。
 - Model 仍未完整后端化；Knowledge 和 Prompt 已迁移到后端持久化数据源。
 - 当前未实现真实 RAG、embedding、向量数据库、文件上传、真实认证 / JWT / RBAC。
 - 当前 SQLite + `create_all` 是开发期方案，后续正式阶段可引入 Alembic。
 
 后续阶段顺序：
 
-1. UI 细节 polish、项目截图和部署说明。
+1. 项目截图和部署说明。
 2. failed / stopped record 持久化与 stream 错误恢复。
 3. 简单关键词检索、Prompt 版本管理或变量填充。
 4. Knowledge 文件上传、embedding / RAG 方案设计。

@@ -801,3 +801,30 @@
 - `cd frontend && npm run build`
 - `git diff --check`
 - 人工验证路径：访问 `/chat-test`；检查无 Prompt / 无 Knowledge / 有记录状态、streaming 文案、停止生成、详情 Drawer、选择两条记录打开 Compare Drawer，以及页面是否存在明显撑爆或错位
+
+### 2026-06-09：Phase 2.13B Dashboard 真实数据接入
+
+内容：
+- 新增 `GET /api/v1/dashboard/summary`，汇总 Prompt、Knowledge、TestRecord、ModelConfig 和最近测试记录。
+- Dashboard recentRecords 最多返回 5 条，只返回 `outputPreview`，不返回完整 `output`。
+- ModelConfig 状态复用现有脱敏 service，只返回 ready 相关状态，不返回 API Key。
+- 前端 Dashboard 从本地 mock 数据改为调用后端 summary 接口，展示真实统计卡片、最近测试记录、主链路说明和轻量边界提示。
+- 新增 Phase 2.13B Dashboard 模块文档，并同步 README、backend README、模块索引和 roadmap。
+- 本阶段不修改 ChatTest stream 主链路，不修改 Prompt / Knowledge / TestRecord 既有接口契约，不新增图表库。
+
+影响范围：
+- backend/app/modules/dashboard
+- backend/app/api/v1/dashboard.py
+- backend/app/api/v1/router.py
+- frontend/src/views/dashboard/DashboardView.vue
+- frontend/src/services/dashboard.ts
+- frontend/src/types/dashboard.ts
+- docs/modules/dashboard/phase-2-13-dashboard-summary.md
+- README.md / backend/README.md / docs/modules/README.md / docs/roadmap.md
+
+验证方式：
+- `cd backend && python -m compileall app`
+- FastAPI TestClient 验证 `GET /api/v1/dashboard/summary` 返回 200，包含 prompt / knowledge / testRecord / modelConfig / recentRecords，recentRecords 不包含完整 output，modelConfig 不包含 API Key。
+- `cd frontend && npm run build`
+- `git diff --check`
+- 人工验证路径：启动后端和前端，访问 `/dashboard`，检查真实统计卡片、最近 TestRecord、ModelConfig ready 状态、无记录空态和其他页面访问情况。

@@ -8,7 +8,7 @@
 ## v0.2 Dashboard 首页数据看板
 
 - 目标：为首页提供可扩展的数据看板框架。
-- 当前状态：进行中（已完成 Dashboard 首页 mock 数据看板，后端待接入，趋势区域待实现）。
+- 当前状态：进行中（Phase 2.13B 已完成 Dashboard 真实 summary 接入，首页展示 Prompt、Knowledge、TestRecord、ModelConfig 和最近测试记录；不做复杂图表或大屏）。
 
 ## v0.3 提示词管理
 
@@ -33,7 +33,7 @@
 ## v0.7 FastAPI 后端接入
 
 - 目标：完成前后端基础联调。
-- 当前状态：进行中（已完成 FastAPI 骨架、TestRecord CRUD、ChatTest run / stream、ModelConfig 状态展示、KnowledgeDocument CRUD、PromptTemplate CRUD；当前尚未实现真实 RAG、真实认证 / JWT / RBAC，Model 仍未完成完整后端 CRUD）。
+- 当前状态：进行中（已完成 FastAPI 骨架、TestRecord CRUD、ChatTest run / stream、ModelConfig 状态展示、KnowledgeDocument CRUD、PromptTemplate CRUD 和 Dashboard summary；当前尚未实现真实 RAG、真实认证 / JWT / RBAC，Model 仍未完成完整后端 CRUD）。
 
 ## v0.8 登录与权限控制
 
@@ -57,12 +57,13 @@
 - Phase 2.10：收束清理与稳定性补丁。（已完成；不修改 stream / TestRecord 契约）
 - Phase 2.11：Prompt 后端化轻量版。（已完成；后端 CRUD + Prompt 页面接入 + ChatTest 使用后端 Prompt 详情完整 content）
 - Phase 2.12：项目收束与投递包装。（已完成；只整理文档、简历描述和面试讲解，不修改业务代码）
+- Phase 2.13B：Dashboard 真实数据接入 + 首页 polish。（已完成；summary 接口 + 首页真实统计，不做复杂图表或大屏）
 
 ## 后续规划
 
 ### 近期可做
 
-- UI 细节 polish。
+- 项目截图和部署说明。
 - failed / stopped TestRecord 保存策略。
 - 简单关键词检索增强。
 - 项目截图和部署说明。

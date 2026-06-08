@@ -15,6 +15,7 @@ PromptHub Admin 聚焦 Prompt 调试主链路：把后端 Prompt 模板、手动
 - Prompt 模板后端 CRUD：支持 PromptTemplate 持久化、分页、筛选、启用状态和详情按需加载。
 - Knowledge 文档后端 CRUD：支持 KnowledgeDocument 持久化、分页、筛选、启用状态和详情按需加载。
 - ModelConfig 后端可信配置状态展示：读取后端环境配置状态，只展示脱敏信息。
+- Dashboard 真实统计概览：通过后端 summary 接口展示 Prompt、Knowledge、TestRecord、ModelConfig 和最近测试记录。
 - ChatTest 真实流式调试：通过 fetch stream / ReadableStream 消费 FastAPI 返回的 NDJSON。
 - 手动选择 Knowledge 上下文：ChatTest 可选择启用中的后端 Knowledge 文档并拼入上下文。
 - TestRecord 保存、详情、对比：正常完成后保存记录，列表展示 preview，详情 Drawer 按需加载完整 output，支持双记录对比 Drawer。
@@ -126,6 +127,7 @@ npm run dev
 | Prompt 模板后端 CRUD | 已完成 | PromptTemplate CRUD + ChatTest 使用完整模板内容 |
 | Knowledge 文档后端 CRUD | 已完成 | 文档 CRUD + ChatTest 手动上下文 |
 | ModelConfig 状态展示 | 已完成 | 只读脱敏状态，不做 CRUD |
+| Dashboard 真实统计概览 | 已完成 | 后端 summary + 最近 TestRecord，不返回完整 output |
 | ChatTest 真实流式输出 | 已完成 | fetch stream + NDJSON |
 | TestRecord 持久化 | 已完成 | FastAPI + SQLite |
 | TestRecord 详情 Drawer | 已完成 | 按需加载完整 output |
@@ -170,6 +172,7 @@ npm run dev
 
 - [前端架构说明](docs/frontend-architecture.md)
 - [模块设计文档索引](docs/modules/README.md)
+- [Dashboard summary 接入](docs/modules/dashboard/phase-2-13-dashboard-summary.md)
 - [路线图](docs/roadmap.md)
 - [开发记录](docs/development-log.md)
 - [项目展示说明](docs/project-showcase.md)

@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-当前后端已推进至 Phase 2.12 文档收束阶段。后端业务能力仍保持 Phase 2.11 状态：TestRecord 持久化、ChatTest run / fetch stream、后端 `.env` 模型配置、ModelConfig 脱敏状态展示、Knowledge 后端化轻量 CRUD，以及 Prompt 后端化轻量 CRUD。Knowledge 当前仅由用户手动选择文档并拼入上下文，不是完整 RAG。
+当前后端已推进至 Phase 2.13B Dashboard 真实数据接入阶段。后端已支持 TestRecord 持久化、ChatTest run / fetch stream、后端 `.env` 模型配置、ModelConfig 脱敏状态展示、Knowledge 后端化轻量 CRUD、Prompt 后端化轻量 CRUD，以及 Dashboard summary 聚合接口。Knowledge 当前仅由用户手动选择文档并拼入上下文，不是完整 RAG。
 
 ## 当前已完成
 
@@ -25,6 +25,8 @@
 - PromptTemplate SQLAlchemy model 与 CRUD
 - PromptTemplate 列表只返回 `contentPreview`，详情返回完整 `content`
 - ChatTest 可接收前端选择的后端 PromptTemplate 完整正文作为 `systemPrompt`
+- Dashboard summary 接口，汇总 Prompt、Knowledge、TestRecord、ModelConfig 和最近测试记录
+- Dashboard recentRecords 只返回 `outputPreview`，不返回完整 `output`
 
 ## 当前未完成
 
@@ -35,6 +37,7 @@
 - Prompt 版本管理 / 变量引擎 / 审核流 / marketplace
 - ModelConfig 完整 CRUD 与多 provider 管理
 - Alembic 数据库迁移
+- Dashboard 复杂图表 / 大屏
 
 ## 投递讲解边界
 
@@ -201,6 +204,24 @@ GET /api/v1/model-config
 - 不返回 Authorization、headers 或完整敏感请求信息。
 - 配置缺失时接口仍返回 200，并通过 `enabled=false` 表示 ChatTest 真实调用不可用。
 - 当前不支持 API Key 输入、加密存储、用户级模型配置、ModelConfig CRUD 或多 provider 管理。
+
+## Dashboard Summary 接口
+
+```text
+GET /api/v1/dashboard/summary
+```
+
+该接口用于首页概览，聚合 PromptTemplate、KnowledgeDocument、TestRecord 和 ModelConfig 脱敏状态。
+
+说明：
+
+- `prompt` 返回 Prompt 模板 total / enabled。
+- `knowledge` 返回 Knowledge 文档 total / enabled。
+- `testRecord` 返回 total、success、failed、stopped 和 latestCreatedAt。
+- `modelConfig` 复用后端脱敏状态，只返回 enabled、provider、model、apiKeyConfigured。
+- `recentRecords` 最多返回 5 条，只包含 outputPreview，不返回完整 output。
+- API Key 不进入 Dashboard 响应。
+- Dashboard 不改变 ChatTest run / stream 主链路。
 
 ## KnowledgeDocument 接口
 
