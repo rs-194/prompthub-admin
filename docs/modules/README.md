@@ -1,63 +1,40 @@
-# 模块设计文档索引
+# 模块文档索引
 
-本目录用于保存复杂业务模块的阶段性设计文档，避免把 mock、后端接入和增强阶段混写在同一份文档中。
+本目录保存项目模块的阶段文档。公开索引优先展示当前真实主链路，早期 mock 文档仅作为历史实现记录保留。
 
-| 模块 | 阶段 | 文档 | 状态 |
+## 当前公开模块
+
+| 模块 | 当前阶段 | 文档 | 状态 |
 | --- | --- | --- | --- |
-| 对话测试 / Prompt 调试台 | v1 mock | `chat-test/v1-mock-design.md` | 已实现 |
-| 对话测试 / Prompt 调试台 | v2 knowledge-context mock | `chat-test/v2-knowledge-context-mock.md` | 已实现 |
-| 对话测试 / Prompt 调试台 | v3 params-and-mock-streaming | `chat-test/v3-params-and-mock-streaming.md` | 已实现 |
-| 知识库管理 | v1 mock | `knowledge/v1-mock-design.md` | 已实现 |
-| 知识库管理 | Phase 2.9 backend lite | `knowledge/phase-2-9-knowledge-backend-lite.md` | 已实现 |
-| 提示词管理 | Phase 2.11 backend lite | `prompt/phase-2-11-prompt-backend-lite.md` | 已实现 |
-| Dashboard 首页 | Phase 2.13B summary 接入 | `dashboard/phase-2-13-dashboard-summary.md` | 已实现 |
-| 认证与路由访问控制 | v1 mock | `auth/v1-mock-design.md` | 已实现 |
-| FastAPI 后端 | Phase 2.1 backend skeleton | `backend/v1-backend-skeleton.md` | 已实现 |
-| FastAPI 后端 | Phase 2.2 TestRecord 持久化 | `backend/v2-test-records.md` | 已实现 |
-| FastAPI 后端 | Phase 2.3 真实 LLM 非流式调用 | `backend/v3-llm-chat-test-run.md` | 已实现 |
-| 对话测试 / Prompt 调试台 | Phase 2.4 前端接入真实 run 接口 | `chat-test/phase-2-4-real-run-api.md` | 已实现 |
-| 对话测试 / Prompt 调试台 | Phase 2.5 真实 fetch stream 流式输出 | `chat-test/phase-2-5-stream.md` | 已实现 |
-| 对话测试 / Prompt 调试台 | Phase 2.6 TestRecord 详情 Drawer | `chat-test/phase-2-6-record-detail-drawer.md` | 已实现 |
-| 对话测试 / Prompt 调试台 | Phase 2.7 TestRecord 双记录对比 | `chat-test/phase-2-7-record-compare.md` | 已实现 |
-| 项目展示整理 | Phase 2.8 README 展示化与项目包装 | `../project-showcase.md` | 已完成 |
-| 项目收束与投递包装 | Phase 2.12 文档、简历与面试材料 | `../interview/project-story.md` | 已完成 |
+| Dashboard 首页 | Phase 2.13B summary 接入 | [phase-2-13-dashboard-summary.md](dashboard/phase-2-13-dashboard-summary.md) | 已实现 |
+| 提示词管理 | Phase 2.11 backend lite | [phase-2-11-prompt-backend-lite.md](prompt/phase-2-11-prompt-backend-lite.md) | 已实现 |
+| 知识库管理 | Phase 2.9 backend lite | [phase-2-9-knowledge-backend-lite.md](knowledge/phase-2-9-knowledge-backend-lite.md) | 已实现 |
+| 模型配置 | Phase 2.8 可信状态展示 | [phase-2-8-model-config-display.md](model/phase-2-8-model-config-display.md) | 已实现 |
+| ChatTest | Phase 2.5 真实流式输出 | [phase-2-5-stream.md](chat-test/phase-2-5-stream.md) | 已实现 |
+| TestRecord | Phase 2.6 详情 Drawer | [phase-2-6-record-detail-drawer.md](chat-test/phase-2-6-record-detail-drawer.md) | 已实现 |
+| TestRecord | Phase 2.7 双记录对比 | [phase-2-7-record-compare.md](chat-test/phase-2-7-record-compare.md) | 已实现 |
 
-## 后端阶段说明
+## 支撑阶段文档
 
-- Phase 2.1 已完成 FastAPI 后端骨架、CORS、SQLite / SQLAlchemy 基础连接、`/api/v1` 路由入口和 health check。
-- Phase 2.2 已新增 TestRecord 后端持久化 CRUD 接口，支持创建、分页列表、详情、删除和 keyword 轻量查询。
-- Phase 2.3 已新增 `POST /api/v1/chat-test/run`，支持后端通过 OpenAI-compatible API 做真实 LLM 非流式调用，成功后保存 TestRecord。
-- Phase 2.4 已完成前端 ChatTest 接入 `POST /api/v1/chat-test/run`，可展示真实 LLM 非流式 output，并使用后端返回的 record 更新最近测试记录。
-- Phase 2.5 已新增 `POST /api/v1/chat-test/stream`，使用 fetch stream + FastAPI StreamingResponse + NDJSON 实现真实流式输出；当前不是原生 EventSource SSE，正常完成后由后端保存 TestRecord，用户主动停止时 v1 不保存 stopped record。
-- Phase 2.6 已完成 TestRecord 详情 Drawer，列表只展示 `outputPreview`，完整 output 通过详情接口按需加载。
-- Phase 2.7 已完成基于历史 TestRecord 的双记录对比，前端选择 2 条记录后分别调用 `GET /api/v1/test-records/{id}` 获取完整详情并并排展示；本阶段不是多模型并发生成，不新增 compareGroup 后端表，也不做多路 stream。
-- Phase 2.8 已完成 README 展示化与项目包装整理，新增项目展示说明，用于项目投递、面试讲解和后续简历描述准备；本阶段只修改文档，不修改业务代码。
-- Phase 2.9 已完成 Knowledge 后端化轻量版，提供文档 CRUD、分页、keyword、enabled 筛选和 ChatTest 手动上下文选择。
-- Phase 2.11 已完成 Prompt 后端化轻量版，提供 PromptTemplate CRUD、分页、keyword、category、enabled 筛选，并让 ChatTest 使用后端 Prompt 详情中的完整 `content`。
-- Phase 2.12 已完成项目收束与投递包装，只整理 README、项目展示页、简历 bullet 和面试讲解材料，不修改业务代码。
-- Phase 2.13B 已完成 Dashboard 真实数据接入，新增 summary 接口并让首页展示真实统计、最近 TestRecord 和 ModelConfig 脱敏 ready 状态；本阶段不改变 ChatTest 主链路，不做复杂图表或大屏。
-- Model 仍未完整后端化；Knowledge 和 Prompt 已迁移到后端持久化数据源。
-- 当前未实现真实 RAG、embedding、向量数据库、文件上传、真实认证 / JWT / RBAC。
-- 当前 SQLite + `create_all` 是开发期方案，后续正式阶段可引入 Alembic。
+- `backend/`：FastAPI 骨架、TestRecord 持久化和真实 LLM 调用阶段记录。
+- `chat-test/phase-2-4-real-run-api.md`：前端接入真实 run 接口。
+- `chat-test/v1-mock-design.md`、`v2-knowledge-context-mock.md`、`v3-params-and-mock-streaming.md`：早期 mock 演进记录。
+- `knowledge/v1-mock-design.md`：Knowledge 早期 mock 设计记录。
+- `auth/v1-mock-design.md`：mock 访问控制历史设计，不代表真实认证已完成。
 
-后续阶段顺序：
+## 当前真实边界
 
-1. 项目截图和部署说明。
-2. failed / stopped record 持久化与 stream 错误恢复。
-3. 简单关键词检索、Prompt 版本管理或变量填充。
-4. Knowledge 文件上传、embedding / RAG 方案设计。
-5. auth / Workspace / 多租户、多 provider、权限和审计。
+- Prompt 和 Knowledge 已使用后端 SQLite 持久化 CRUD。
+- ChatTest 已使用 FastAPI StreamingResponse 和 NDJSON 真实流式输出。
+- TestRecord 已支持保存、详情按需加载和历史双记录对比。
+- ModelConfig 只返回脱敏配置状态，不返回 API Key，也不提供 CRUD。
+- Knowledge 当前是手动上下文，不是 RAG。
+- 当前没有真实 JWT、RBAC、多租户、Workspace 或多 provider 管理。
 
-ModelConfig 后端化是后续增强，不排在 stream 前面。
+## 后续顺序
 
-## Phase 2.8 轻量 ModelConfig 展示补充
-
-| 模块 | 阶段 | 文档 | 状态 |
-| --- | --- | --- | --- |
-| 模型配置 | Phase 2.8 轻量 ModelConfig 展示 | `model/phase-2-8-model-config-display.md` | 已实现 |
-
-- 已新增 `GET /api/v1/model-config`，用于展示后端可信 LLM 环境配置状态。
-- 接口只返回脱敏状态，不返回 `LLM_API_KEY`、Authorization 或 headers。
-- 前端模型配置页已展示 provider、model、baseUrlHost、enabled、apiKeyConfigured 和默认参数。
-- 当前仍不支持 API Key 输入、加密存储、多用户模型配置、ModelConfig CRUD 或多 provider 管理。
-- 前端 mock 模型列表仍只是展示用数据，不直接决定 ChatTest 真实调用模型。
+1. 补充真实项目截图和部署说明。
+2. 完善 failed / stopped TestRecord 保存策略和 stream 错误恢复。
+3. 增加 Prompt 版本管理、变量填充或简单检索增强。
+4. 设计 Knowledge 文件上传、embedding 和 RAG 链路。
+5. 评估真实认证、Workspace、多租户、多 provider、权限和审计。

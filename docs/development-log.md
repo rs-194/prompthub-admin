@@ -1,5 +1,27 @@
 ﻿# 开发记录（Development Log）
 
+### 2026-06-09：Phase Public-0 公开仓库清理与截图目录整理
+
+#### 完成内容
+
+- 清理 README 的公开文档入口，移除本地准备资料链接。
+- 更新项目展示页的六个截图占位路径。
+- 更新模块索引和路线图，聚焦 Dashboard、Prompt、Knowledge、ModelConfig、ChatTest 和 TestRecord 当前真实主链路。
+- 删除 `docs/interview/` 以及未维护的旧文档导航、早期项目概览、空数据模型和重复开发日志文件。
+- 在 `.gitignore` 中明确忽略 `docs/interview/`，继续保留 `notes/interview/` 的本地忽略规则。
+- 新增 `docs/assets/screenshots/.gitkeep`，建立公开截图目录。
+
+#### 影响范围
+
+- 仅修改公开仓库文档、忽略规则和截图目录占位。
+- 未修改 `backend/app/**`、`frontend/src/**` 或任何业务代码。
+
+#### 验证
+
+- `git status --short`
+- `git diff --check`
+- 检查 README 引用的 docs 路径均存在。
+
 ## 1. 开发记录说明
 本文件用于持续记录项目开发过程中的关键变更，便于回溯与协作。
 
