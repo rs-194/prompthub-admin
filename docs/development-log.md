@@ -903,3 +903,21 @@
 - `cd frontend && npm run build`
 - `git diff --check`
 - 人工验证路径：访问 `/knowledge`，检查默认标题/摘要搜索、全文范围切换、匹配提示、范围切换立即刷新、重置恢复 basic，以及 debounce、enabled 筛选和分页。
+
+### 2026-06-10：Phase 2.14C Prompt 搜索区文案与布局修正
+
+内容：
+- Prompt keyword 输入框文案明确为搜索标题、描述和内容关键词。
+- 分类输入框文案调整为“分类筛选”，避免与 Knowledge 搜索范围选择混淆。
+- keyword 输入框宽度由 320px 调整为 360px，减少长 placeholder 被截断的情况。
+- 保留 400ms keyword debounce、搜索按钮、重置按钮、分类筛选和启用状态筛选。
+- 本阶段不新增 Prompt searchScope，不修改 Knowledge 搜索逻辑、后端代码或接口契约。
+
+影响范围：
+- frontend/src/views/prompts/PromptListView.vue
+- docs/development-log.md
+
+验证方式：
+- `cd frontend && npm run build`
+- `git diff --check`
+- 人工验证路径：访问 `/prompts`，检查 keyword、分类筛选和启用状态文案，确认自动搜索、搜索按钮和重置按钮保持可用。

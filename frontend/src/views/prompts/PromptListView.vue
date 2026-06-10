@@ -23,7 +23,7 @@
         v-model="searchKeyword"
         class="prompt-filters__search"
         clearable
-        placeholder="输入关键词后自动搜索"
+        placeholder="输入标题 / 描述 / 内容关键词后自动搜索"
         @input="handleKeywordInput"
         @keyup.enter="handleSearch"
       />
@@ -31,7 +31,7 @@
         v-model="selectedCategory"
         class="prompt-filters__category"
         clearable
-        placeholder="分类"
+        placeholder="分类筛选"
         @keyup.enter="handleFilterChange"
         @clear="handleFilterChange"
       />
@@ -442,7 +442,7 @@ onBeforeUnmount(() => {
 }
 
 .prompt-filters__search {
-  width: 320px;
+  width: 360px;
 }
 
 .prompt-filters__category,
