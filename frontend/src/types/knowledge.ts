@@ -1,4 +1,4 @@
-export interface KnowledgeDocumentListItem {
+export interface KnowledgeDocumentResponseBase {
   id: number;
   title: string;
   summary: string | null;
@@ -10,7 +10,11 @@ export interface KnowledgeDocumentListItem {
   updatedAt: string;
 }
 
-export interface KnowledgeDocumentDetail extends KnowledgeDocumentListItem {
+export interface KnowledgeDocumentListItem extends KnowledgeDocumentResponseBase {
+  matchSnippet?: string;
+}
+
+export interface KnowledgeDocumentDetail extends KnowledgeDocumentResponseBase {
   content: string;
 }
 
@@ -36,8 +40,10 @@ export interface KnowledgeDocumentListParams {
   page?: number;
   pageSize?: number;
   keyword?: string;
+  searchScope?: KnowledgeSearchScope;
   enabled?: boolean;
 }
 
+export type KnowledgeSearchScope = 'basic' | 'fullText';
 export type KnowledgeDocumentFormData = KnowledgeDocumentCreateRequest;
 export type KnowledgeDialogMode = 'create' | 'edit';

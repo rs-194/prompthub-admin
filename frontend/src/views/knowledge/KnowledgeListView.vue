@@ -25,10 +25,18 @@
         v-model="searchKeyword"
         class="knowledge-filters__search"
         clearable
-        placeholder="搜索标题、摘要、来源或正文"
+        placeholder="输入关键词后自动搜索"
+        @input="handleKeywordInput"
         @keyup.enter="handleSearch"
-        @clear="handleSearch"
       />
+      <el-select
+        v-model="selectedSearchScope"
+        class="knowledge-filters__scope"
+        @change="handleSearchScopeChange"
+      >
+        <el-option label="标题/摘要" value="basic" />
+        <el-option label="全文" value="fullText" />
+      </el-select>
       <el-select
         v-model="selectedEnabled"
         class="knowledge-filters__select"
@@ -41,6 +49,13 @@
       </el-select>
       <el-button type="primary" plain @click="handleSearch">搜索</el-button>
       <el-button @click="handleReset">重置</el-button>
+    </div>
+
+    <div
+      v-if="selectedSearchScope === 'fullText'"
+      class="knowledge-search-tip"
+    >
+      全文搜索会匹配正文内容，结果可能更宽。
     </div>
 
     <el-alert
@@ -58,7 +73,11 @@
       <el-table-column prop="title" label="文档标题" min-width="180" show-overflow-tooltip />
       <el-table-column label="摘要 / 正文预览" min-width="260">
         <template #default="{ row }">
-          <span>{{ row.summary || row.contentPreview || '-' }}</span>
+          <div v-if="row.matchSnippet" class="knowledge-match">
+            <el-tag size="small" type="success" effect="plain">匹配</el-tag>
+            <span>{{ row.matchSnippet }}</span>
+          </div>
+          <span v-else>{{ row.summary || row.contentPreview || '-' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="来源" min-width="150" show-overflow-tooltip>
@@ -155,9 +174,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
+import { debounce } from '@/utils/debounce';
 import {
   createKnowledgeDocument,
   deleteKnowledgeDocument,
@@ -171,6 +191,7 @@ import type {
   KnowledgeDocumentDetail,
   KnowledgeDocumentFormData,
   KnowledgeDocumentListItem,
+  KnowledgeSearchScope,
 } from '@/types/knowledge';
 import KnowledgeFormDialog from './components/KnowledgeFormDialog.vue';
 import KnowledgePreviewDrawer from './components/KnowledgePreviewDrawer.vue';
@@ -180,6 +201,7 @@ const total = ref(0);
 const page = ref(1);
 const pageSize = ref(10);
 const searchKeyword = ref('');
+const selectedSearchScope = ref<KnowledgeSearchScope>('basic');
 const selectedEnabled = ref<'' | 'enabled' | 'disabled'>('');
 const loading = ref(false);
 const errorMessage = ref('');
@@ -225,6 +247,7 @@ async function loadKnowledgeDocuments() {
       page: page.value,
       pageSize: pageSize.value,
       keyword: searchKeyword.value,
+      searchScope: selectedSearchScope.value,
       enabled: getEnabledFilter(),
     });
     documents.value = response.items;
@@ -238,30 +261,51 @@ async function loadKnowledgeDocuments() {
   }
 }
 
+const debouncedKeywordSearch = debounce(() => {
+  page.value = 1;
+  void loadKnowledgeDocuments();
+}, 400);
+
+function handleKeywordInput() {
+  debouncedKeywordSearch();
+}
+
 function handleSearch() {
+  debouncedKeywordSearch.cancel();
   page.value = 1;
   void loadKnowledgeDocuments();
 }
 
 function handleFilterChange() {
+  debouncedKeywordSearch.cancel();
+  page.value = 1;
+  void loadKnowledgeDocuments();
+}
+
+function handleSearchScopeChange() {
+  debouncedKeywordSearch.cancel();
   page.value = 1;
   void loadKnowledgeDocuments();
 }
 
 function handleReset() {
+  debouncedKeywordSearch.cancel();
   searchKeyword.value = '';
+  selectedSearchScope.value = 'basic';
   selectedEnabled.value = '';
   page.value = 1;
   void loadKnowledgeDocuments();
 }
 
 function handlePageSizeChange() {
+  debouncedKeywordSearch.cancel();
   page.value = 1;
   void loadKnowledgeDocuments();
 }
 
 function handlePreviousPage() {
   if (page.value > 1) {
+    debouncedKeywordSearch.cancel();
     page.value -= 1;
     void loadKnowledgeDocuments();
   }
@@ -269,6 +313,7 @@ function handlePreviousPage() {
 
 function handleNextPage() {
   if (page.value < totalPages.value) {
+    debouncedKeywordSearch.cancel();
     page.value += 1;
     void loadKnowledgeDocuments();
   }
@@ -420,6 +465,10 @@ function handlePreviewVisibleChange(visible: boolean) {
 onMounted(() => {
   void loadKnowledgeDocuments();
 });
+
+onBeforeUnmount(() => {
+  debouncedKeywordSearch.cancel();
+});
 </script>
 
 <style scoped>
@@ -454,8 +503,30 @@ onMounted(() => {
   width: 320px;
 }
 
+.knowledge-filters__scope {
+  width: 130px;
+}
+
 .knowledge-filters__select {
   width: 180px;
+}
+
+.knowledge-search-tip {
+  margin: -10px 0 18px;
+  color: #909399;
+  font-size: 12px;
+}
+
+.knowledge-match {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.6;
+}
+
+.knowledge-match .el-tag {
+  flex: none;
+  margin-top: 2px;
 }
 
 .knowledge-tags {
@@ -495,6 +566,7 @@ onMounted(() => {
 
   .knowledge-filters,
   .knowledge-filters__search,
+  .knowledge-filters__scope,
   .knowledge-filters__select {
     width: 100%;
   }

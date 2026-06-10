@@ -23,9 +23,9 @@
         v-model="searchKeyword"
         class="prompt-filters__search"
         clearable
-        placeholder="搜索标题、描述、分类、场景或内容"
+        placeholder="输入关键词后自动搜索"
+        @input="handleKeywordInput"
         @keyup.enter="handleSearch"
-        @clear="handleSearch"
       />
       <el-input
         v-model="selectedCategory"
@@ -151,9 +151,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
+import { debounce } from '@/utils/debounce';
 import {
   createPromptTemplate,
   deletePromptTemplate,
@@ -231,17 +232,29 @@ async function loadPromptTemplates() {
   }
 }
 
+const debouncedKeywordSearch = debounce(() => {
+  page.value = 1;
+  void loadPromptTemplates();
+}, 400);
+
+function handleKeywordInput() {
+  debouncedKeywordSearch();
+}
+
 function handleSearch() {
+  debouncedKeywordSearch.cancel();
   page.value = 1;
   void loadPromptTemplates();
 }
 
 function handleFilterChange() {
+  debouncedKeywordSearch.cancel();
   page.value = 1;
   void loadPromptTemplates();
 }
 
 function handleReset() {
+  debouncedKeywordSearch.cancel();
   searchKeyword.value = '';
   selectedCategory.value = '';
   selectedEnabled.value = '';
@@ -250,12 +263,14 @@ function handleReset() {
 }
 
 function handlePageSizeChange() {
+  debouncedKeywordSearch.cancel();
   page.value = 1;
   void loadPromptTemplates();
 }
 
 function handlePreviousPage() {
   if (page.value > 1) {
+    debouncedKeywordSearch.cancel();
     page.value -= 1;
     void loadPromptTemplates();
   }
@@ -263,6 +278,7 @@ function handlePreviousPage() {
 
 function handleNextPage() {
   if (page.value < totalPages.value) {
+    debouncedKeywordSearch.cancel();
     page.value += 1;
     void loadPromptTemplates();
   }
@@ -390,6 +406,10 @@ function handleSwitchChange(
 
 onMounted(() => {
   void loadPromptTemplates();
+});
+
+onBeforeUnmount(() => {
+  debouncedKeywordSearch.cancel();
 });
 </script>
 

@@ -13,6 +13,7 @@ src/
 ├─ stores/                 # 状态管理（当前含 app store）
 ├─ styles/                 # 全局样式
 ├─ types/                  # 全局类型与声明
+├─ utils/                  # 前端轻量通用工具
 ├─ views/                  # 页面视图（当前多为骨架页）
 ├─ App.vue
 └─ main.ts
@@ -52,6 +53,10 @@ src/
 ## 8. `src/styles` 的职责
 - 存放全局基础样式（reset、基础布局、通用页面类、主题变量）。
 - 不承载大量具体业务页面样式。
+
+## 8.1 `src/utils` 的职责
+- 存放不依赖具体业务模块的轻量前端工具。
+- `debounce.ts` 提供支持取消待执行任务的防抖函数，供列表 keyword 输入自动搜索和组件卸载清理使用。
 
 ## 9. `src/api` 或 `src/services` 的预期职责
 - `src/api`（计划新增）：按业务模块封装接口请求。

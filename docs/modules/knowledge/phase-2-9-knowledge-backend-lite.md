@@ -35,14 +35,22 @@ PUT    /api/v1/knowledge-documents/{id}
 DELETE /api/v1/knowledge-documents/{id}
 ```
 
-列表支持 `page`、`pageSize`、`keyword`、`enabled`。`pageSize` 最大为 100。
+列表支持 `page`、`pageSize`、`keyword`、`searchScope`、`enabled`。`pageSize` 最大为 100。
 
-keyword 使用轻量 SQL `LIKE` 查询，可匹配 `title`、`summary`、`source_name` 和完整 `content`，但列表响应不会返回完整正文。
+keyword 使用轻量 SQL `LIKE` 查询：
+
+- `searchScope=basic`：默认范围，只匹配 `title`、`summary`、`source_name` 和 `tags`。
+- `searchScope=fullText`：在 basic 范围基础上额外匹配完整 `content`。
+- 有 keyword 时，service 层按标题、标签、摘要 / 来源、正文的优先级做轻量排序。
+- 列表项返回 `matchSnippet` 说明命中位置，但不会返回完整正文。
+
+当前不是 SQLite FTS、搜索引擎、embedding 检索或 RAG。
 
 ## 3. 列表与详情边界
 
-- 列表项只返回 `summary` 和后端生成的 `contentPreview`。
+- 列表项只返回 `summary`、后端生成的 `contentPreview` 和 keyword 命中时的 `matchSnippet`。
 - 详情接口才返回完整 `content`。
+- `matchSnippet` 只属于列表项，不加入详情接口。
 - tags JSON 解析失败时返回空数组，避免脏数据导致页面失败。
 - 找不到的详情、更新或删除请求返回 404。
 - 开发期继续使用 `Base.metadata.create_all()`，不引入 Alembic。
@@ -53,6 +61,8 @@ Knowledge 页面已改为后端数据源，支持：
 
 - 服务端分页
 - keyword 搜索
+- basic / fullText 搜索范围切换
+- keyword 命中片段提示
 - enabled 筛选
 - 创建、编辑、删除
 - 启用、停用
@@ -88,6 +98,7 @@ knowledgeContext.content = 选中文档完整正文拼接文本
 ## 6. 非目标
 
 - 不做 embedding
+- 不做 SQLite FTS 或外部搜索引擎
 - 不做向量数据库
 - 不做自动召回或召回排序
 - 不做联网搜索
@@ -101,8 +112,8 @@ knowledgeContext.content = 选中文档完整正文拼接文本
 ## 7. 验证
 
 - `cd backend && python -m compileall app`
-- FastAPI TestClient：create、list、content keyword、detail、update、enabled、404、delete
-- 确认列表项没有 `content`，详情有完整 `content`
+- FastAPI TestClient：basic title、basic 排除 content、fullText content、matchSnippet、轻量排序和详情结构
+- 确认列表项没有 `content`，`matchSnippet` 不返回完整正文，详情有完整 `content` 且没有 `matchSnippet`
 - `cd frontend && npm run build`
 - 人工路径：访问 `/knowledge` 完成 CRUD；访问 `/chat-test` 选择启用文档并运行
 
@@ -110,4 +121,4 @@ knowledgeContext.content = 选中文档完整正文拼接文本
 
 ## 8. 后续入口
 
-下一阶段可以先设计简单关键词检索，或单独输出 embedding / RAG 方案。进入 RAG 前需要重新明确切片、索引、召回、token 预算和检索结果追踪边界。
+当前轻量 keyword 搜索适合开发期和小数据量。数据量变大后，可以单独评估 SQLite FTS、外部搜索引擎或 embedding 检索方案；进入 RAG 前仍需重新明确切片、索引、召回、token 预算和检索结果追踪边界。

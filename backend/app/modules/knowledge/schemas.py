@@ -1,6 +1,9 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
+
+KnowledgeSearchScope = Literal["basic", "fullText"]
 
 
 class KnowledgeDocumentCreate(BaseModel):
@@ -25,7 +28,7 @@ class KnowledgeDocumentUpdate(KnowledgeDocumentCreate):
     pass
 
 
-class KnowledgeDocumentListItem(BaseModel):
+class KnowledgeDocumentResponseBase(BaseModel):
     id: int
     title: str
     summary: str | None
@@ -37,7 +40,11 @@ class KnowledgeDocumentListItem(BaseModel):
     updatedAt: datetime
 
 
-class KnowledgeDocumentDetail(KnowledgeDocumentListItem):
+class KnowledgeDocumentListItem(KnowledgeDocumentResponseBase):
+    matchSnippet: str = ""
+
+
+class KnowledgeDocumentDetail(KnowledgeDocumentResponseBase):
     content: str
 
 

@@ -850,3 +850,56 @@
 - `cd frontend && npm run build`
 - `git diff --check`
 - 人工验证路径：启动后端和前端，访问 `/dashboard`，检查真实统计卡片、最近 TestRecord、ModelConfig ready 状态、无记录空态和其他页面访问情况。
+
+### 2026-06-10：Phase 2.14A 列表搜索防抖优化
+
+内容：
+- 新增轻量 `debounce` 工具，使用明确的 TypeScript 参数类型并支持 `cancel()`。
+- Prompt 与 Knowledge 列表 keyword 输入停止 400ms 后自动搜索，并重置到第 1 页。
+- 搜索、重置、筛选、分页和组件卸载时取消待执行的 keyword 搜索。
+- 保留原有搜索和重置按钮，不修改 category / enabled / page / pageSize 等既有筛选逻辑。
+- TestRecord 当前没有 keyword 搜索入口，本阶段未扩展。
+- 本阶段不修改后端代码、services、types、接口契约、ChatTest stream、详情、对比或 selection 限制，不新增依赖。
+
+影响范围：
+- frontend/src/utils/debounce.ts
+- frontend/src/views/prompts/PromptListView.vue
+- frontend/src/views/knowledge/KnowledgeListView.vue
+- docs/frontend-architecture.md
+- docs/roadmap.md
+- docs/development-log.md
+
+验证方式：
+- `cd frontend && npm run build`
+- `git diff --check`
+- 人工验证路径：访问 `/prompts` 和 `/knowledge`，输入 keyword 后等待自动刷新；检查搜索按钮立即查询、重置立即清空并加载、筛选和分页不会被 pending debounce 覆盖，离开页面后无控制台报错。
+
+### 2026-06-10：Phase 2.14B Knowledge 搜索体验优化
+
+内容：
+- Knowledge 列表接口新增 `searchScope`，默认 `basic`，只匹配标题、摘要、来源和标签。
+- `fullText` 范围在 basic 基础上额外匹配正文。
+- 列表项新增 `matchSnippet`，用于说明标题、标签、摘要、来源或正文命中位置；列表仍不返回完整 `content`。
+- keyword 搜索结果按标题、标签、摘要 / 来源、正文做 service 层轻量优先级排序。
+- Knowledge 页面新增“标题/摘要 / 全文”范围选择，切换时取消 pending debounce、重置第一页并立即查询。
+- 重置恢复 basic，保留 400ms keyword debounce、搜索按钮、enabled 筛选和分页。
+- 详情接口结构保持不变，不返回 `matchSnippet`。
+- 本阶段不实现 SQLite FTS、搜索引擎、embedding、向量数据库或 RAG，不新增依赖。
+
+影响范围：
+- backend/app/modules/knowledge/schemas.py
+- backend/app/modules/knowledge/service.py
+- backend/app/api/v1/knowledge.py
+- frontend/src/types/knowledge.ts
+- frontend/src/services/knowledge.ts
+- frontend/src/views/knowledge/KnowledgeListView.vue
+- docs/modules/knowledge/phase-2-9-knowledge-backend-lite.md
+- docs/roadmap.md
+- docs/development-log.md
+
+验证方式：
+- `cd backend && python -m compileall app`
+- FastAPI TestClient 验证 basic / fullText、matchSnippet、标题优先、列表无完整 content 和详情结构不变
+- `cd frontend && npm run build`
+- `git diff --check`
+- 人工验证路径：访问 `/knowledge`，检查默认标题/摘要搜索、全文范围切换、匹配提示、范围切换立即刷新、重置恢复 basic，以及 debounce、enabled 筛选和分页。

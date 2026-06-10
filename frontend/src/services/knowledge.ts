@@ -4,6 +4,7 @@ import type {
   KnowledgeDocumentListItem,
   KnowledgeDocumentListParams,
   KnowledgeDocumentListResponse,
+  KnowledgeDocumentResponseBase,
   KnowledgeDocumentUpdateRequest,
 } from '@/types/knowledge';
 import { request, RequestError } from './request';
@@ -36,9 +37,9 @@ function isNullableString(value: unknown): value is string | null {
   return typeof value === 'string' || value === null;
 }
 
-function isKnowledgeDocumentListItem(
+function isKnowledgeDocumentResponseBase(
   value: unknown,
-): value is KnowledgeDocumentListItem {
+): value is KnowledgeDocumentResponseBase {
   return (
     isRecord(value) &&
     typeof value.id === 'number' &&
@@ -53,12 +54,25 @@ function isKnowledgeDocumentListItem(
   );
 }
 
+function isKnowledgeDocumentListItem(
+  value: unknown,
+): value is KnowledgeDocumentListItem {
+  if (!isKnowledgeDocumentResponseBase(value) || !isRecord(value)) {
+    return false;
+  }
+
+  return (
+    value.matchSnippet === undefined ||
+    typeof value.matchSnippet === 'string'
+  );
+}
+
 function isKnowledgeDocumentDetail(
   value: unknown,
 ): value is KnowledgeDocumentDetail {
   return (
     isRecord(value) &&
-    isKnowledgeDocumentListItem(value) &&
+    isKnowledgeDocumentResponseBase(value) &&
     typeof value.content === 'string'
   );
 }
@@ -120,6 +134,8 @@ function buildListPath(params: KnowledgeDocumentListParams) {
   if (keyword) {
     searchParams.set('keyword', keyword);
   }
+
+  searchParams.set('searchScope', params.searchScope ?? 'basic');
 
   if (params.enabled !== undefined) {
     searchParams.set('enabled', String(params.enabled));

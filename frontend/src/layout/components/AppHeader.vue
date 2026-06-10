@@ -24,7 +24,7 @@ const handleLogout = async (): Promise<void> => {
 
 <template>
   <div class="app-header">
-    <h2 class="app-header__title">面包屑</h2>
+    <h2 class="app-header__title"></h2>
     <div class="app-header__user">
       <span class="app-header__username">{{ displayName }}</span>
       <el-button type="primary" plain size="small" @click="handleLogout">退出登录</el-button>

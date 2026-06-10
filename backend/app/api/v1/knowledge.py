@@ -7,6 +7,7 @@ from app.modules.knowledge.schemas import (
     KnowledgeDocumentDeleteResponse,
     KnowledgeDocumentDetail,
     KnowledgeDocumentListResponse,
+    KnowledgeSearchScope,
     KnowledgeDocumentUpdate,
 )
 from app.modules.knowledge.service import (
@@ -25,6 +26,7 @@ def get_knowledge_documents(
     page: int = Query(default=1, ge=1),
     pageSize: int = Query(default=10, ge=1, le=100),
     keyword: str | None = None,
+    searchScope: KnowledgeSearchScope = Query(default="basic"),
     enabled: bool | None = None,
     db: Session = Depends(get_db),
 ) -> KnowledgeDocumentListResponse:
@@ -34,6 +36,7 @@ def get_knowledge_documents(
         page_size=pageSize,
         keyword=keyword,
         enabled=enabled,
+        search_scope=searchScope,
     )
 
 

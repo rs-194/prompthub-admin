@@ -23,7 +23,22 @@
 - 补充 Dashboard、Prompt、Knowledge、ChatTest 和 TestRecord 真实截图。
 - 补充部署说明。
 - 完善 failed / stopped TestRecord 保存策略和 stream 错误恢复。
-- 增加简单关键词检索增强。
+
+## Phase 2.14A：列表搜索防抖优化
+
+- 状态：已完成。
+- Prompt 与 Knowledge 列表 keyword 输入支持 400ms 防抖自动搜索。
+- 保留搜索和重置按钮，筛选、分页和组件卸载时会取消待执行搜索。
+- TestRecord 当前没有 keyword 搜索入口，本阶段未扩展。
+- 本阶段不修改后端、接口契约或依赖。
+
+## Phase 2.14B：Knowledge 搜索体验优化
+
+- 状态：已完成。
+- Knowledge keyword 默认只搜索标题、摘要、来源和标签。
+- 可切换全文范围，按需增加正文匹配。
+- 列表返回轻量匹配提示，并优先展示标题、标签等更相关结果。
+- 当前仍是 SQL `LIKE` 与 service 层轻量排序，不是 FTS、embedding 或 RAG。
 
 ## 中期规划
 
